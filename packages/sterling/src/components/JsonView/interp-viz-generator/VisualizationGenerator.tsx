@@ -25,6 +25,7 @@ export default function VisualizationGenerator(props : VisualizationGeneratorPro
         // (but not when the components are re-rendered due to changes in the value of the stateful
         // variables themselves). since we're enabling the editing of the components from the editing
         // pane, it is important to enable this.
+        console.log("json IR being used:", jsonIR);
         const vizComponent = <VisualizationComponents jsonIR={jsonIR} datum={datum} textRenames={textRenames} key={count} />
         setVisualizationComponent((_) => vizComponent);
         setCount(count + 1);

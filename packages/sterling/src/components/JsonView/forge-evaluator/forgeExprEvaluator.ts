@@ -29,7 +29,7 @@ import { DatumParsed } from '@/sterling-connection';
 
 ///// DEFINING SOME USEFUL TYPES /////
 type SingleValue = string; // maybe this can be a number too?
-type Tuple = SingleValue[];
+export type Tuple = SingleValue[];
 type EvalResult = SingleValue | Tuple[];
 
 ///// HELPER FUNCTIONS /////
@@ -91,12 +91,12 @@ export class ForgeExprEvaluator
   }
 
   protected defaultResult(): EvalResult {
-    console.log('default result');
+    // console.log('default result');
     return [];
   }
 
   visitExpr(ctx: ExprContext): EvalResult {
-    console.log('visiting expr');
+    // console.log('visiting expr');
     let results: EvalResult | undefined = undefined;
 
     if (ctx.LET_TOK()) {
@@ -132,7 +132,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr1(ctx: Expr1Context): EvalResult {
-    console.log('visiting expr1');
+    // console.log('visiting expr1');
 
     if (ctx.OR_TOK()) {
       console.log('OR value (OR_TOK)');
@@ -149,7 +149,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr1_5(ctx: Expr1_5Context): EvalResult {
-    console.log('visiting expr1_5');
+    // console.log('visiting expr1_5');
 
     if (ctx.XOR_TOK()) {
       const leftChildValue = this.visit(ctx.expr1_5()!);
@@ -165,7 +165,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr2(ctx: Expr2Context): EvalResult {
-    console.log('visiting expr2');
+    // console.log('visiting expr2');
 
     if (ctx.IFF_TOK()) {
       const leftChildValue = this.visit(ctx.expr2()!);
@@ -181,7 +181,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr3(ctx: Expr3Context): EvalResult {
-    console.log('visiting expr3');
+    // console.log('visiting expr3');
 
     if (ctx.IMP_TOK()) {
       const leftChildValue = this.visit(ctx.expr4()!);
@@ -197,7 +197,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr4(ctx: Expr4Context): EvalResult {
-    console.log('visiting expr4');
+    // console.log('visiting expr4');
 
     if (ctx.AND_TOK()) {
       const leftChildValue = this.visit(ctx.expr4()!);
@@ -213,7 +213,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr4_5(ctx: Expr4_5Context): EvalResult {
-    console.log('visiting expr4_5');
+    // console.log('visiting expr4_5');
     let results: EvalResult = [];
 
     if (ctx.UNTIL_TOK()) {
@@ -266,7 +266,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr5(ctx: Expr5Context): EvalResult {
-    console.log('visiting expr5');
+    // console.log('visiting expr5');
     let results: EvalResult = [];
     const childrenResults = this.visitChildren(ctx);
 
@@ -321,7 +321,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr6(ctx: Expr6Context): EvalResult {
-    console.log('visiting expr6');
+    // console.log('visiting expr6');
     let results: EvalResult = [];
 
     let toNegate = false;
@@ -418,7 +418,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr7(ctx: Expr7Context): EvalResult {
-    console.log('visiting expr7');
+    // console.log('visiting expr7');
     let results: EvalResult = [];
 
     const childrenResults = this.visitChildren(ctx);
@@ -470,7 +470,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr8(ctx: Expr8Context): EvalResult {
-    console.log('visiting expr8');
+    // console.log('visiting expr8');
     let results: EvalResult = [];
 
     if (ctx.PLUS_TOK()) {
@@ -500,7 +500,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr9(ctx: Expr9Context): EvalResult {
-    console.log('visiting expr9');
+    // console.log('visiting expr9');
 
     const childrenResults = this.visitChildren(ctx);
 
@@ -512,7 +512,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr10(ctx: Expr10Context): EvalResult {
-    console.log('visiting expr10');
+    // console.log('visiting expr10');
     let results: EvalResult = [];
 
     if (ctx.PPLUS_TOK()) {
@@ -530,7 +530,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr11(ctx: Expr11Context): EvalResult {
-    console.log('visiting expr11');
+    // console.log('visiting expr11');
     let results: EvalResult = [];
 
     if (ctx.AMP_TOK()) {
@@ -548,7 +548,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr12(ctx: Expr12Context): EvalResult {
-    console.log('visiting expr12');
+    // console.log('visiting expr12');
     let results: EvalResult = [];
 
     if (ctx.arrowOp()) {
@@ -566,7 +566,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr13(ctx: Expr13Context): EvalResult {
-    console.log('visiting expr13');
+    // console.log('visiting expr13');
     let results: EvalResult = [];
 
     if (ctx.SUPT_TOK()) {
@@ -594,7 +594,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr14(ctx: Expr14Context): EvalResult {
-    console.log('visiting expr14');
+    // console.log('visiting expr14');
     let results: EvalResult = [];
 
     if (ctx.LEFT_SQUARE_TOK()) {
@@ -620,8 +620,8 @@ export class ForgeExprEvaluator
   }
 
   visitExpr15(ctx: Expr15Context): EvalResult {
-    console.log('visiting expr15');
-    console.log('ctx:', ctx.text);
+    // console.log('visiting expr15');
+    // console.log('ctx:', ctx.text);
     let results: EvalResult = [];
 
     if (ctx.DOT_TOK()) {
@@ -670,7 +670,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr16(ctx: Expr16Context): EvalResult {
-    console.log('visiting expr16');
+    // console.log('visiting expr16');
     let results: EvalResult = [];
 
     if (ctx.PRIME_TOK()) {
@@ -688,7 +688,7 @@ export class ForgeExprEvaluator
   }
 
   visitExpr17(ctx: Expr17Context): EvalResult {
-    console.log('visiting expr17');
+    // console.log('visiting expr17');
     let results: EvalResult = [];
 
     const childrenResults = this.visitChildren(ctx);
@@ -720,7 +720,7 @@ export class ForgeExprEvaluator
 
   visitExpr18(ctx: Expr18Context): EvalResult {
     // TODO: can't handle sexpr, block, etc as of now
-    console.log('visiting expr18');
+    // console.log('visiting expr18');
     // let results: Tuple[] = [["Atomic Expressions (`constants`, `qualName`, `this`, `block`, `sexpr`)"]];
     let results: EvalResult = [];
 
@@ -781,7 +781,7 @@ export class ForgeExprEvaluator
   }
 
   visitExprList(ctx: ExprListContext): EvalResult {
-    console.log('visiting exprList');
+    // console.log('visiting exprList');
     let results: EvalResult = [];
 
     if (ctx.COMMA_TOK()) {
@@ -799,7 +799,7 @@ export class ForgeExprEvaluator
   }
 
   visitName(ctx: NameContext): EvalResult {
-    console.log('visiting name');
+    // console.log('visiting name');
 
     // if `true` or `false`, return the corresponding value
     const identifier = ctx.IDENTIFIER_TOK().text;
@@ -812,7 +812,7 @@ export class ForgeExprEvaluator
     }
 
     console.log('need to find an identifier');
-    console.log(this.instanceData);
+    // console.log(this.instanceData);
 
     let result: EvalResult | undefined = undefined;
 

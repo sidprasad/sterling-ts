@@ -5,6 +5,7 @@ import { DatumParsed } from '@/sterling-connection';
 import { SterlingDispatch } from 'sterling/src/state/store';
 import { LineComponent } from './components/line';
 import { GridComponent } from './components/grid';
+import { ArrowComponent } from './components/arrow';
 
 // [TODO] maybe it's possible to define this in a better way -- we
 // could define a separate type for `properties` for each kind of
@@ -71,6 +72,18 @@ export function SingleComponent(props: SingleComponentProps) {
         json={elementJson}
         datum={datum}
         textRenames={textRenames}
+        dynamics={{}}
+        vizRow={vizRow}
+        vizCol={vizCol}
+      />
+    )
+  }
+
+  if (elementJson.type === 'arrow') {
+    return (
+      <ArrowComponent
+        json={elementJson}
+        datum={datum}
         dynamics={{}}
         vizRow={vizRow}
         vizCol={vizCol}

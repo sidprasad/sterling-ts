@@ -22,6 +22,58 @@ function getComponentDescriber(componentData: ComponentData) {
         throw new Error('Text component must have a text property');
       }
       return `Text component: ${handleConditional(textProperty.value, 'text')}`;
+    case 'line':
+      const startXProperty = componentData.properties.find(
+        (property) => property.name === 'startX'
+      );
+      const endXProperty = componentData.properties.find(
+        (property) => property.name === 'endX'
+      );
+      const startYProperty = componentData.properties.find(
+        (property) => property.name === 'startY'
+      );
+      const endYProperty = componentData.properties.find(
+        (property) => property.name === 'endY'
+      );
+      if (
+        startXProperty === undefined ||
+        endXProperty === undefined ||
+        startYProperty === undefined ||
+        endYProperty === undefined
+      ) {
+        throw new Error('Line component must have startX, endX, startY, and endY properties');
+      }
+      return `Line component - startX: ${handleConditional(
+        startXProperty.value
+      )}, endX: ${handleConditional(endXProperty.value)}, startY: ${handleConditional(
+        startYProperty.value
+      )}, endY: ${handleConditional(endYProperty.value)}`;
+    case 'arrow':
+      const arrowStartXProperty = componentData.properties.find(
+        (property) => property.name === 'startX'
+      );
+      const arrowEndXProperty = componentData.properties.find(
+        (property) => property.name === 'endX'
+      );
+      const arrowStartYProperty = componentData.properties.find(
+        (property) => property.name === 'startY'
+      );
+      const arrowEndYProperty = componentData.properties.find(
+        (property) => property.name === 'endY'
+      );
+      if (
+        arrowStartXProperty === undefined ||
+        arrowEndXProperty === undefined ||
+        arrowStartYProperty === undefined ||
+        arrowEndYProperty === undefined
+      ) {
+        throw new Error('Arrow component must have startX, endX, startY, and endY properties');
+      }
+      return `Arrow component - startX: ${handleConditional(
+        arrowStartXProperty.value
+      )}, endX: ${handleConditional(arrowEndXProperty.value)}, startY: ${handleConditional(
+        arrowStartYProperty.value
+      )}, endY: ${handleConditional(arrowEndYProperty.value)}`;
     case 'grid':
       const rowsProperty = componentData.properties.find(
         (property) => property.name === 'rows'
@@ -217,6 +269,35 @@ export default function EditComponent(props: EditComponentProps) {
             isStyle: false
           });
         }
+      }
+      if (updatedComponents[selectedComponentIdx].type === 'line' || updatedComponents[selectedComponentIdx].type === 'arrow') {
+        const startX = updatedComponents[selectedComponentIdx].properties.find(
+          (property) => property.name === 'startX'
+        )?.value;
+        const startY = updatedComponents[selectedComponentIdx].properties.find(
+          (property) => property.name === 'startY'
+        )?.value;
+        const endX = updatedComponents[selectedComponentIdx].properties.find(
+          (property) => property.name === 'endX'
+        )?.value;
+        const endY = updatedComponents[selectedComponentIdx].properties.find(
+          (property) => property.name === 'endY'
+        )?.value;
+        const width = endX - startX;
+        const height = endY - startY;
+        updatedComponents[selectedComponentIdx].properties = updatedComponents[
+          selectedComponentIdx
+        ].properties.map((property) =>
+          property.name === 'startX'
+            ? { ...property, value: newX }
+            : property.name === 'endX'
+            ? { ...property, value: newX + width }
+            : property.name === 'startY'
+            ? { ...property, value: newY }
+            : property.name === 'endY'
+            ? { ...property, value: newY + height }
+            : property
+        );
       }
       return updatedComponents;
     });

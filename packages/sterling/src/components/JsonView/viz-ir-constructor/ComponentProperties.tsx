@@ -50,6 +50,24 @@ export const gridComponentProperties: ComponentProperty[] = [
   // but the nested component requires some more thought)
 ];
 
+export const lineComponentProperties: ComponentProperty[] = [
+  { name: 'startX', type: 'number', required: true, isStyle: false },
+  { name: 'endX', type: 'number', required: true, isStyle: false },
+  { name: 'startY', type: 'number', required: true, isStyle: false },
+  { name: 'endY', type: 'number', required: true, isStyle: false },
+  { name: 'strokeWidth', type: 'number', required: false, isStyle: true },
+  { name: 'strokeColor', type: 'string', required: false, isStyle: true },
+];
+
+export const arrowComponentProperties: ComponentProperty[] = [
+  { name: 'startX', type: 'number', required: true, isStyle: false },
+  { name: 'endX', type: 'number', required: true, isStyle: false },
+  { name: 'startY', type: 'number', required: true, isStyle: false },
+  { name: 'endY', type: 'number', required: true, isStyle: false },
+  { name: 'strokeWidth', type: 'number', required: false, isStyle: true },
+  { name: 'strokeColor', type: 'string', required: false, isStyle: true },
+];
+
 function getInputType(propertyType: PropertyType) {
   // switch (propertyType) {
   //   case 'string':

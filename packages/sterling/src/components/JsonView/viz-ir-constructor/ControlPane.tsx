@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import {
   ComponentProperty,
   textComponentProperties,
-  gridComponentProperties
+  gridComponentProperties,
+  lineComponentProperties,
+  arrowComponentProperties
 } from './ComponentProperties';
 import { ComponentData } from './VizConstructor';
 import AddComponent from './AddComponent';
@@ -13,6 +15,7 @@ export enum ComponentType {
   GRID = 'grid',
   TEXT = 'text',
   LINE = 'line',
+  ARROW = 'arrow',
   CONDITIONAL = 'conditional'
 }
 
@@ -20,7 +23,8 @@ export enum ComponentType {
 export const componentProperties: Record<string, ComponentProperty[]> = {
   [ComponentType.GRID]: gridComponentProperties, // [], // [TODO]
   [ComponentType.TEXT]: textComponentProperties,
-  [ComponentType.LINE]: [], // [TODO]
+  [ComponentType.LINE]: lineComponentProperties,
+  [ComponentType.ARROW]: arrowComponentProperties,
   [ComponentType.CONDITIONAL]: [] // [TODO]
 };
 

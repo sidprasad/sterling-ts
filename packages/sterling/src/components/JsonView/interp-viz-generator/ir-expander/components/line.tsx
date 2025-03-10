@@ -15,7 +15,7 @@ interface LineComponentProps {
 export function LineComponent(props: LineComponentProps) {
   // [TODO] update this to use dynamics, vizRow, and vizCol where necessary 
   const { json, dynamics, vizRow, vizCol, datum } = props;
-  const { id, properties } = json;
+  const { id, properties, shouldGlow } = json;
   const { startX, endX, startY, endY, lineStyle } = properties;
 
   const instanceIndex = 0; // TODO: we should make this a stateful var that is passed in from the UI
@@ -51,6 +51,8 @@ export function LineComponent(props: LineComponentProps) {
         strokeWidth: strokeWidthValue ? Number(strokeWidthValue) : undefined,
         strokeColor: strokeColorValue ? String(strokeColorValue) : undefined
       }}
+      shouldGlow={shouldGlow}
+      id={id}
     />
   );
 }

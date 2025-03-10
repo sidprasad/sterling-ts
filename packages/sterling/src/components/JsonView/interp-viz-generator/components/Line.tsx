@@ -12,6 +12,8 @@ export interface LineProps {
   startY: number;
   endY: number;
   lineStyle?: LineStyle;
+  shouldGlow: boolean;
+  id: string;
 }
 
 export default function Line(props: LineProps) {
@@ -42,13 +44,20 @@ export default function Line(props: LineProps) {
   return (
     <svg
       ref={svgRef}
-      width={Math.max(props.endX, props.startX) + 20}
-      height={Math.max(props.endY, props.startY) + 5}
+      // width={Math.max(props.endX, props.startX) + 20}
+      // height={Math.max(props.endY, props.startY) + 5}
+      width={Math.max(props.endX, props.startX) - Math.min(props.endX, props.startX) + 20}
+      height={Math.max(props.endY, props.startY) - Math.min(props.endY, props.startY) + 5}
       style={{
         position: 'absolute',
         top: Math.min(props.startY, props.endY),
-        left: Math.min(props.startX, props.endX)
+        left: Math.min(props.startX, props.endX),
+        boxShadow: props.shouldGlow
+          ? "inset 0 0 8px rgba(253, 224, 71, 0.8), inset 0 0 16px rgba(253, 224, 71, 0.6)"
+          : "none"
       }}
+      className={`${props.shouldGlow ? "bg-yellow-100 animate-pulse" : ""}`}
+      id={props.id}
     />
   );
 }

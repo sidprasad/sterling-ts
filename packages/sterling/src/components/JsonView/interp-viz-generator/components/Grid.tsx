@@ -4,6 +4,7 @@ import { DatumParsed } from '@/sterling-connection';
 import { applyTextRename, isArray } from '../ir-expander/util';
 import { GridComponent } from '../ir-expander/components/grid';
 import { Tuple } from '../../forge-evaluator/forgeExprEvaluator';
+import { ArrowComponent } from '../ir-expander/components/arrow';
 
 
 export type GridIndex = { row: number; col: number; type: 'grid-index' };
@@ -137,12 +138,17 @@ export default function Grid(props: GridProps) {
           //   cellVizJson = JSON.parse(JSON.stringify(cellVisualization).replaceAll('${row}', `${row}`).replaceAll('${col}', `${col}`));
           }
           let component: JSX.Element;
+          console.log('going to look at type:', cellVizJson.type);
             switch (cellVizJson.type) {
               // [TODO] add support for things other than nested grids
               case 'grid':
                 const ytop = topY || 0;
                 const xleft = leftX || 0;
                 component = <GridComponent json={cellVizJson} datum={datum} textRenames={textRenames} dynamics={{}} vizRow={row} vizCol={col} offsetX={xleft + xOffset + (col * cellWidth)} offsetY={ytop + yOffset + (row * cellHeight)} />;
+                break;
+              case 'arrow':
+                console.log('in arrow');
+                component = <ArrowComponent json={cellVizJson} datum={datum} dynamics={{}} vizRow={row} vizCol={col} offsetX={(leftX || 0) + xOffset + (col * cellWidth)} offsetY={(topY || 0) + yOffset + (row * cellHeight)} />;
                 break;
               default:
                 component = <></>;

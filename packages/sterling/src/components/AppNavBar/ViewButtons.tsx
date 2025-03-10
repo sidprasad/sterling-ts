@@ -9,6 +9,7 @@ import { mainViewChanged } from '../../state/ui/uiSlice';
 const ViewButtons = () => {
   const dispatch = useSterlingDispatch();
   const availableViews = useSterlingSelector(selectAvailableViews);
+  console.log(availableViews)
   const mainView = useSterlingSelector(selectMainView);
   return (
     <>
@@ -40,6 +41,16 @@ const ViewButtons = () => {
           onClick={() => dispatch(mainViewChanged('ScriptView'))}
         >
           Script
+        </NavButton>
+      )}
+      {availableViews.includes('JsonView') && (
+        <NavButton
+          isActive={mainView === 'JsonView'}
+          mr={1}
+          leftIcon={<HiCode />}
+          onClick={() => dispatch(mainViewChanged('JsonView'))}
+        >
+          Json
         </NavButton>
       )}
     </>

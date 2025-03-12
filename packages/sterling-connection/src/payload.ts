@@ -88,7 +88,7 @@ export interface ProviderMeta {
   /**
    * The Sterling views the provider wants available to the user.
    */
-  views?: ('graph' | 'table' | 'script' | 'json')[];
+  views?: ('graph' | 'table' | 'script')[];
   /**
    * The selection of instance generators that Sterling can request from. In
    * Alloy and Forge, this would be the "menu" of run, check, etc. commands.

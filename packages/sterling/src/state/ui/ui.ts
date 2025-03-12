@@ -1,8 +1,7 @@
 export type GraphView = 'GraphView';
 export type TableView = 'TableView';
 export type ScriptView = 'ScriptView';
-export type JsonView = 'JsonView';
-export type MainView = GraphView | TableView | ScriptView | JsonView;
+export type MainView = GraphView | TableView | ScriptView;
 export type CommonDrawerView = 'explorer' | 'evaluator' | 'log';
 export type GraphDrawerView =
   | CommonDrawerView
@@ -43,7 +42,7 @@ export interface UiState {
  */
 export const newUiState = (initialView?: MainView): UiState => {
   return {
-    availableViews: ['GraphView', 'TableView', 'ScriptView', 'JsonView'],
+    availableViews: ['GraphView', 'TableView', 'ScriptView'],
     mainView: initialView || 'ScriptView',
     graphViewDrawer: 'explorer',
     tableViewDrawer: null,

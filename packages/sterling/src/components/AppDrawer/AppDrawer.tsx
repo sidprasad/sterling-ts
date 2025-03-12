@@ -13,13 +13,11 @@ const AppDrawer = () => {
         {view === 'GraphView' && <GraphDrawerHeader />}
         {view === 'TableView' && <TableDrawerHeader />}
         {view === 'ScriptView' && <ScriptDrawerHeader />}
-        {view === 'JsonView' && <GraphDrawer />}
       </PaneHeader>
       <PaneBody>
         {view === 'GraphView' && <GraphDrawer />}
         {view === 'TableView' && <TableDrawer />}
         {view === 'ScriptView' && <ScriptDrawer />}
-        {view === 'JsonView' && <GraphDrawer />}
       </PaneBody>
     </Pane>
   );

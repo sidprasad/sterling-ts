@@ -4,7 +4,8 @@ import { SterlingTheme } from '@/sterling-theme';
 
 export interface VisualizerConfig {
   script?: string,
-  theme?: string
+  theme?: string,
+  cnd?: string
 }
 
 export interface AlloyDatum {

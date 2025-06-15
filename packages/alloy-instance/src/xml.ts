@@ -10,14 +10,18 @@ export function parseAlloyXML(xml: string): AlloyDatum {
   // The provider may pass various visualizer-configuration information as part 
   // of the instance XML. (This is not part of the Alloy instance XML spec, but 
   // is useful.) 
-  const maybeVisualizer = document.querySelector('visualizer');
-  const maybeVizScriptText = maybeVisualizer === null ? 
-                               undefined : 
-                               parseStringAttribute(maybeVisualizer, 'script')
-  const maybeVizThemeText = maybeVisualizer === null ? 
-                               undefined  : 
-                               parseStringAttribute(maybeVisualizer, 'theme')
-  
+  const visualizerElements = document.querySelectorAll('visualizer');
+  let maybeCnDText, maybeScriptText, maybeThemeText = undefined
+  for(const vis of visualizerElements) {
+    // The last visualizer element for a given attribute will apply.
+    const maybeScriptTextLocal = parseStringAttribute(vis, 'script')
+    const maybeThemeTextLocal = parseStringAttribute(vis, 'theme')
+    const maybeCnDTextLocal = parseStringAttribute(vis, 'cnd')
+    maybeScriptText = maybeScriptTextLocal ?? maybeScriptText
+    maybeCnDText = maybeCnDTextLocal ?? maybeCnDText
+    maybeThemeText = maybeThemeTextLocal ?? maybeThemeText
+  }
+
   return {
     instances: instances.map(instanceFromElement),
     bitwidth: parseNumericAttribute(instances[0], 'bitwidth'),
@@ -30,8 +34,9 @@ export function parseAlloyXML(xml: string): AlloyDatum {
     maxTrace: parseNumericAttribute(instances[0], 'maxtrace'),
     minTrace: parseNumericAttribute(instances[0], 'mintrace'),
     traceLength: parseNumericAttribute(instances[0], 'tracelength'),
-    visualizerConfig: {script: deEscape(maybeVizScriptText), 
-                       theme: deEscape(maybeVizThemeText)}
+    visualizerConfig: {script: deEscape(maybeScriptText), 
+                       theme: deEscape(maybeThemeText),
+                       cnd: deEscape(maybeCnDText)}
   };
 }
 

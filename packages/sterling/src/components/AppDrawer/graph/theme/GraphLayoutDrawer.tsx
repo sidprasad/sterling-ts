@@ -1,17 +1,22 @@
 import { PaneTitle } from '@/sterling-ui';
 import { Button, FormControl, FormLabel, Textarea, Input } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum } from '../../../../state/selectors';
+import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
 import { RiHammerFill } from 'react-icons/ri';
 import { Icon } from '@chakra-ui/react';
 
 const GraphLayoutDrawer = () => {
   const datum = useSterlingSelector(selectActiveDatum);
-
   const [cndSpecText, setCndSpecText] = useState<string>("");
-
+  
   if (!datum) return null;
+
+  /** Load from XML (if provided) once. */
+    const preloadedSpec = useSterlingSelector((state) => selectCnDSpec(state, datum))
+  useEffect( () => {
+    if(preloadedSpec !== '') setCndSpecText(preloadedSpec)
+  }, [])
 
   const openInCnd = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

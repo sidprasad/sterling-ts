@@ -648,3 +648,15 @@ export const selectTables = createSelector(
     return [];
   }
 );
+
+
+/**
+ * Select the pre-loaded CnD spec, if any. 
+ * NOTE WELL: this will not persist changes in the Layout window as of June 2025. 
+ */
+export function selectCnDSpec(
+  state: SterlingState,
+  datum: DatumParsed<any>
+): string {
+  return graphsSelectors.selectCnDSpec(state.graphs, datum);
+}

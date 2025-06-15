@@ -74,6 +74,18 @@ function selectZoomMatrix(
   return state.matricesByDatumId[datum.id]?.zoomMatrix;
 }
 
+/**
+ * Select the pre-loaded CnD diagram spec, if any.
+ * If no spec is defined, the value with be the empty string.
+ */
+function selectCnDSpec(
+  state: GraphsState,
+  datum: DatumParsed<any>
+): string {
+  return state.cndSpecByDatumId[datum.id]
+}
+
+
 export default {
   selectGraphLayout,
   selectHiddenRelations,
@@ -81,5 +93,6 @@ export default {
   selectSpreadMatrix,
   selectTheme,
   selectTimeIndex,
-  selectZoomMatrix
+  selectZoomMatrix,
+  selectCnDSpec
 };

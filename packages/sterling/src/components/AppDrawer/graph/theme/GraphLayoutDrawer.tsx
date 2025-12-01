@@ -1,27 +1,59 @@
 import { PaneTitle } from '@/sterling-ui';
-import { Button, FormControl, FormLabel, Textarea, Input } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
 import { RiHammerFill } from 'react-icons/ri';
 import { Icon } from '@chakra-ui/react';
 
+// Declare the window functions from SpyTial's react-component-integration
+declare global {
+  interface Window {
+    mountCndLayoutInterface?: (elementId?: string) => void;
+    getCurrentCNDSpecFromReact?: () => string;
+  }
+}
+
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
-  const [cndSpecText, setCndSpecText] = useState<string>("");
+  const cndEditorRef = useRef<HTMLDivElement>(null);
+  const [isEditorMounted, setIsEditorMounted] = useState(false);
   
   if (!datum) return null;
 
   /** Load from XML (if provided) once. */
-  const preloadedSpec = useSterlingSelector((state) => selectCnDSpec(state, datum))
-  useEffect( () => {
-    if(preloadedSpec !== '') setCndSpecText(preloadedSpec)
-  }, [preloadedSpec])
+  const preloadedSpec = useSterlingSelector((state) => selectCnDSpec(state, datum));
+
+  // Mount the CnD Layout Interface from SpyTial
+  useEffect(() => {
+    // Mount the CnD editor
+    if (cndEditorRef.current && window.mountCndLayoutInterface && !isEditorMounted) {
+      try {
+        window.mountCndLayoutInterface('cnd-editor-mount');
+        setIsEditorMounted(true);
+        console.log('CnD Layout Interface mounted');
+      } catch (err) {
+        console.error('Failed to mount CnD Layout Interface:', err);
+      }
+    }
+  }, [isEditorMounted]);
+
+  // If there's a preloaded spec, we need to set it in the CnD interface
+  // This would require SpyTial to expose a setter function
+  useEffect(() => {
+    if (preloadedSpec && preloadedSpec !== '' && isEditorMounted) {
+      // SpyTial would need to expose window.setCNDSpecInReact or similar
+      // For now, log that we have a preloaded spec
+      console.log('Preloaded CnD spec available:', preloadedSpec.substring(0, 100) + '...');
+    }
+  }, [preloadedSpec, isEditorMounted]);
 
   const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    
+    // Get the CnD spec from the React component
+    const cndSpecText = window.getCurrentCNDSpecFromReact?.() || '';
     
     // Update the CnD spec in Redux state - this will trigger SpyTialGraph to re-render
     dispatch(cndSpecSet({ datum, spec: cndSpecText }));
@@ -33,7 +65,9 @@ const GraphLayoutDrawer = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        setCndSpecText(text);
+        // When SpyTial exposes a setter, we can use it here
+        // For now, we'll apply directly
+        dispatch(cndSpecSet({ datum, spec: text }));
       };
       reader.readAsText(file);
     }
@@ -41,22 +75,37 @@ const GraphLayoutDrawer = () => {
 
   return (
     <div className='absolute inset-0 flex flex-col overflow-y-auto p-4'>
-      <FormControl mt={4}>
-        <FormLabel>Upload layout specification file</FormLabel>
-        <Input type="file" accept=".cnd" onChange={handleFileUpload} />
-      </FormControl>
-      <FormControl>
-        <FormLabel>Layout Specification</FormLabel>
-        <Textarea
-          minH="20rem"
-          value={cndSpecText}
-          onChange={e => setCndSpecText(e.target.value)}
-          placeholder="Enter CnD layout specification here..."
+      <div className="mt-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Upload layout specification file
+        </label>
+        <input 
+          type="file" 
+          accept=".cnd" 
+          onChange={handleFileUpload}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
-      </FormControl>
-      <Button onClick={applyLayout} mt={4} colorScheme="blue">
+      </div>
+      
+      {/* CnD Layout Interface mount point */}
+      <div 
+        id="cnd-editor-mount" 
+        ref={cndEditorRef}
+        className="flex-1 min-h-[300px] mt-4"
+      ></div>
+      
+      {!isEditorMounted && (
+        <div className="text-gray-500 text-sm mt-2">
+          Loading CnD Layout Editor...
+        </div>
+      )}
+      
+      <button 
+        onClick={applyLayout} 
+        className="mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
         Apply Layout
-      </Button>
+      </button>
     </div>
   );
 };

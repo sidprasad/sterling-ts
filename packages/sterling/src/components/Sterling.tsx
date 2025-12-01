@@ -10,6 +10,13 @@ import { AppStage } from './AppStage/AppStage';
 import { AppStatusBar } from './AppStatusBar/AppStatusBar';
 import { defaultPreferences } from '../preferences';
 
+// Declare the window functions from SpyTial's react-component-integration
+declare global {
+  interface Window {
+    mountErrorMessageModal?: (elementId?: string) => void;
+  }
+}
+
 interface SterlingProps {
   url?: string;
 }
@@ -27,8 +34,22 @@ const Sterling = (props: SterlingProps) => {
     };
   }, [url, dispatch]);
 
+  // Mount the SpyTial error message modal once globally
+  useEffect(() => {
+    if (window.mountErrorMessageModal) {
+      try {
+        window.mountErrorMessageModal('spytial-error-modal');
+        console.log('SpyTial Error Message Modal mounted');
+      } catch (err) {
+        console.error('Failed to mount SpyTial Error Message Modal:', err);
+      }
+    }
+  }, []);
+
   return (
     <>
+      {/* SpyTial error modal mount point */}
+      <div id="spytial-error-modal" />
       <Dashboard
         rightPaneCollapsed={drawerCollapsed}
         rightPaneInitialWidth={layout.drawerWidth}

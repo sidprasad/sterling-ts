@@ -261,8 +261,9 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
       // Step 7: Render the layout with prior positions for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
-        // Pass prior positions to maintain node positions across temporal frames
-        const renderOptions = priorPositions ? { priorPositions } : undefined;
+        // Only pass prior positions if we actually have some stored positions
+        const hasPriorPositions = priorPositions && Object.keys(priorPositions).length > 0;
+        const renderOptions = hasPriorPositions ? { priorPositions } : undefined;
         await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
         
         // Capture positions after render for next frame

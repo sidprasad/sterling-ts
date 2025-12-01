@@ -689,6 +689,17 @@ function timeIndexSet(
   state.timeByDatumId[datum.id] = index;
 }
 
+/**
+ * Set the CnD spec for a datum.
+ */
+function cndSpecSet(
+  state: DraftState,
+  action: PayloadAction<{ datum: DatumParsed<any>; spec: string }>
+) {
+  const { datum, spec } = action.payload;
+  state.cndSpecByDatumId[datum.id] = spec;
+}
+
 function getEdgeStyleSpecUnique(
   theme: WritableDraft<SterlingTheme>,
   relation: string
@@ -772,6 +783,7 @@ function validateLayouts(state: DraftState, datum: DatumParsed<any>) {
 
 export default {
   asAttributeSet,
+  cndSpecSet,
   curveRemoved,
   curveSet,
   edgeLabelStyleRemoved,

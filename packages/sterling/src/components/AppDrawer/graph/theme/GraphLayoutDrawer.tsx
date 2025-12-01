@@ -1,51 +1,30 @@
 import { PaneTitle } from '@/sterling-ui';
 import { Button, FormControl, FormLabel, Textarea, Input } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { useSterlingSelector } from '../../../../state/hooks';
+import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
+import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
 import { RiHammerFill } from 'react-icons/ri';
 import { Icon } from '@chakra-ui/react';
 
 const GraphLayoutDrawer = () => {
+  const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
   const [cndSpecText, setCndSpecText] = useState<string>("");
   
   if (!datum) return null;
 
   /** Load from XML (if provided) once. */
-    const preloadedSpec = useSterlingSelector((state) => selectCnDSpec(state, datum))
+  const preloadedSpec = useSterlingSelector((state) => selectCnDSpec(state, datum))
   useEffect( () => {
     if(preloadedSpec !== '') setCndSpecText(preloadedSpec)
-  }, [])
+  }, [preloadedSpec])
 
-  const openInCnd = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
-    // Create a form element
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'http://localhost:3000';
-    form.target = '_blank';
-
-    // Create input elements for the form data
-    const cndSpecTextInput = document.createElement('input');
-    cndSpecTextInput.type = 'hidden';
-    cndSpecTextInput.name = 'cope';
-    cndSpecTextInput.value = cndSpecText;
-    form.appendChild(cndSpecTextInput);
-
-    const alloyDatumInput = document.createElement('input');
-    alloyDatumInput.type = 'hidden';
-    alloyDatumInput.name = 'alloydatum';
-    alloyDatumInput.value = datum.data;
-    form.appendChild(alloyDatumInput);
-
-    // Append the form to the body and submit it
-    document.body.appendChild(form);
-    form.submit();
-
-    // Remove the form from the document
-    document.body.removeChild(form);
+    
+    // Update the CnD spec in Redux state - this will trigger SpyTialGraph to re-render
+    dispatch(cndSpecSet({ datum, spec: cndSpecText }));
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,10 +51,11 @@ const GraphLayoutDrawer = () => {
           minH="20rem"
           value={cndSpecText}
           onChange={e => setCndSpecText(e.target.value)}
+          placeholder="Enter CnD layout specification here..."
         />
       </FormControl>
-      <Button onClick={openInCnd} mt={4}>
-        Load layout
+      <Button onClick={applyLayout} mt={4} colorScheme="blue">
+        Apply Layout
       </Button>
     </div>
   );

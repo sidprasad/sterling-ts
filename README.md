@@ -24,6 +24,11 @@ Go to `Manual Datum` near the bottom of the screen and paste in Alloy-style inst
 - For layout/theme changes:
   - RelationStylePanel.tsx
   - `alloy-graph/srcnew` + `generateGraph.ts` is the new graph layout (and this is where the theme is applied)
+  
+- **SpyTial/CnD Integration**: The Graph view now uses SpyTial (Cope and Drag) for visualization instead of DAGRE
+  - `GraphView/SpyTialGraph.tsx` - The React component that wraps the SpyTial `webcola-cnd-graph` custom element
+  - `AppDrawer/graph/theme/GraphLayoutDrawer.tsx` - The layout drawer where you can edit and apply CnD specifications
+  - CnD specifications are stored in Redux state and trigger re-renders of the SpyTial graph
 
 
 

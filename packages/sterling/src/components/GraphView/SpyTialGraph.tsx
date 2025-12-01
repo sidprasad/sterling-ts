@@ -46,21 +46,31 @@ declare global {
 declare global {
   interface HTMLElementTagNameMap {
     'webcola-cnd-graph': HTMLElement & {
-      renderLayout: (layout: any) => Promise<void>;
+      renderLayout: (layout: any, options?: { priorPositions?: Record<string, { x: number; y: number }> }) => Promise<void>;
+      getNodePositions?: () => Record<string, { x: number; y: number }>;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
     };
   }
 }
 
+// Type for node positions used in temporal trace continuity
+type NodePositions = Record<string, { x: number; y: number }>;
+
 interface SpyTialGraphProps {
   datum: DatumParsed<any>;
   cndSpec: string;
+  /** Index of the current time step in a temporal trace */
+  timeIndex?: number;
+  /** Callback to share node positions with parent for cross-frame continuity */
+  onNodePositionsChange?: (positions: NodePositions) => void;
+  /** Prior node positions from previous frame for temporal continuity */
+  priorPositions?: NodePositions;
   onCndSpecChange?: (spec: string) => void;
 }
 
 const SpyTialGraph = (props: SpyTialGraphProps) => {
-  const { datum, cndSpec } = props;
+  const { datum, cndSpec, timeIndex, priorPositions, onNodePositionsChange } = props;
   // Separate ref for the graph container - this div is NOT managed by React's children
   const graphContainerRef = useRef<HTMLDivElement>(null);
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
@@ -159,9 +169,13 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         throw new Error('No instances found in Alloy XML');
       }
 
-      // Step 2: Create AlloyDataInstance
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[0]);
+      // Step 2: Create AlloyDataInstance for the current time index
+      // For temporal traces, select the instance at the current time step
+      const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
+      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
       console.log('Created Alloy Data Instance:', {
+        instanceIndex,
+        totalInstances: alloyDatum.instances.length,
         types: alloyDataInstance.getTypes().length,
         atoms: alloyDataInstance.getAtoms().length,
         relations: alloyDataInstance.getRelations().length
@@ -245,9 +259,19 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Store the layout for reset functionality
       layoutRef.current = layoutResult.layout;
 
-      // Step 7: Render the layout
+      // Step 7: Render the layout with prior positions for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
-        await graphElementRef.current.renderLayout(layoutResult.layout);
+        // Pass prior positions to maintain node positions across temporal frames
+        const renderOptions = priorPositions ? { priorPositions } : undefined;
+        await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
+        
+        // Capture positions after render for next frame
+        if (onNodePositionsChange && graphElementRef.current.getNodePositions) {
+          const newPositions = graphElementRef.current.getNodePositions();
+          if (newPositions) {
+            onNodePositionsChange(newPositions);
+          }
+        }
       }
 
       setIsLoading(false);
@@ -256,7 +280,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, resetLayout, canUseServerEval, createServerCallback]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, canUseServerEval, createServerCallback, priorPositions, onNodePositionsChange]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
@@ -295,12 +319,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     };
   }, []); // Only run once on mount
 
-  // Load graph when datum or cndSpec changes
+  // Load graph when datum, cndSpec, or timeIndex changes
   useEffect(() => {
     if (graphElementRef.current) {
       loadGraph();
     }
-  }, [datum.data, cndSpec, loadGraph]);
+  }, [datum.data, cndSpec, timeIndex, loadGraph]);
 
   return (
     <div 

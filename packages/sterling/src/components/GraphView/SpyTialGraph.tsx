@@ -46,8 +46,8 @@ declare global {
 declare global {
   interface HTMLElementTagNameMap {
     'webcola-cnd-graph': HTMLElement & {
-      renderLayout: (layout: any, options?: { priorPositions?: Record<string, { x: number; y: number }> }) => Promise<void>;
-      getNodePositions?: () => Record<string, { x: number; y: number }>;
+      renderLayout: (layout: any, options?: { priorPositions?: NodePositions }) => Promise<void>;
+      getNodePositions?: () => NodePositions;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
     };
@@ -55,7 +55,9 @@ declare global {
 }
 
 // Type for node positions used in temporal trace continuity
-type NodePositions = Record<string, { x: number; y: number }>;
+// Can be either an array of {id, x, y} or a Record<nodeId, {x, y}>
+type NodePositionEntry = { id: string; x: number; y: number };
+type NodePositions = NodePositionEntry[] | Record<string, { x: number; y: number }>;
 
 interface SpyTialGraphProps {
   datum: DatumParsed<any>;
@@ -261,15 +263,61 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
       // Step 7: Render the layout with prior positions for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
-        // Only pass prior positions if we actually have some stored positions
-        const hasPriorPositions = priorPositions && Object.keys(priorPositions).length > 0;
-        const renderOptions = hasPriorPositions ? { priorPositions } : undefined;
+        // Capture current SVG positions BEFORE re-rendering
+        // This captures any user drag interactions from the current view
+        let currentPositions: NodePositions | undefined;
+        if (graphElementRef.current.getNodePositions) {
+          const rawPositions = graphElementRef.current.getNodePositions();
+          if (rawPositions && Array.isArray(rawPositions) && rawPositions.length > 0) {
+            console.log('Captured positions for nodes:', rawPositions.map((p: NodePositionEntry) => p.id));
+            console.log('Sample position:', rawPositions[0]);
+          }
+          currentPositions = rawPositions;
+        } else {
+          console.log('getNodePositions not available on graph element');
+        }
+        
+        // Log the nodes in the new layout to compare IDs
+        const newLayoutNodeIds = layoutResult.layout.nodes?.map((n: any) => n.id || n.name || n.label) || [];
+        console.log('Nodes in new layout:', newLayoutNodeIds);
+        
+        // Use captured positions if we have them, otherwise use passed-in prior positions
+        const hasCurrentPositions = currentPositions && (
+          Array.isArray(currentPositions) ? currentPositions.length > 0 : Object.keys(currentPositions).length > 0
+        );
+        const positionsToUse = hasCurrentPositions ? currentPositions : priorPositions;
+        
+        const hasPriorPositions = positionsToUse && (
+          Array.isArray(positionsToUse) ? positionsToUse.length > 0 : Object.keys(positionsToUse).length > 0
+        );
+        const renderOptions = hasPriorPositions ? { priorPositions: positionsToUse } : undefined;
+        
+        // Debug: Check which prior position IDs match new layout node IDs
+        if (hasPriorPositions && positionsToUse) {
+          const priorIds = Array.isArray(positionsToUse) 
+            ? positionsToUse.map((p: NodePositionEntry) => p.id)
+            : Object.keys(positionsToUse);
+          const matchingIds = priorIds.filter((id: string) => newLayoutNodeIds.includes(id));
+          console.log('Prior position IDs:', priorIds);
+          console.log('Matching IDs between prior positions and new layout:', matchingIds);
+          console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
+          
+          // Show actual position values for matching nodes
+          if (Array.isArray(positionsToUse)) {
+            const matchingPositions = positionsToUse.filter((p: NodePositionEntry) => newLayoutNodeIds.includes(p.id));
+            console.log('Prior positions for matching nodes:', matchingPositions);
+          }
+        }
+        
+        console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(positionsToUse) ? positionsToUse.length : Object.keys(positionsToUse!).length) + ' nodes' : 'none');
+        
         await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
         
-        // Capture positions after render for next frame
+        // Capture positions after render and notify parent for persistence across component remounts
         if (onNodePositionsChange && graphElementRef.current.getNodePositions) {
           const newPositions = graphElementRef.current.getNodePositions();
           if (newPositions) {
+            console.log('Positions AFTER render:', newPositions);
             onNodePositionsChange(newPositions);
           }
         }

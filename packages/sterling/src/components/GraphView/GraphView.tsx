@@ -5,8 +5,9 @@ import { selectActiveDatum, selectCnDSpec, selectTimeIndex } from '../../state/s
 import { SpyTialGraph } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
 
-// Type for node positions used in temporal trace continuity
-type NodePositions = Record<string, { x: number; y: number }>;
+// Type for node positions - matches SpyTialGraph
+type NodePositionEntry = { id: string; x: number; y: number };
+type NodePositions = NodePositionEntry[] | Record<string, { x: number; y: number }>;
 
 const GraphView = () => {
   const datum = useSterlingSelector(selectActiveDatum);

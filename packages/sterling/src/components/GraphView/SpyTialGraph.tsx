@@ -46,21 +46,33 @@ declare global {
 declare global {
   interface HTMLElementTagNameMap {
     'webcola-cnd-graph': HTMLElement & {
-      renderLayout: (layout: any) => Promise<void>;
+      renderLayout: (layout: any, options?: { priorPositions?: NodePositions }) => Promise<void>;
+      getNodePositions?: () => NodePositions;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
     };
   }
 }
 
+// Type for node positions used in temporal trace continuity
+// Can be either an array of {id, x, y} or a Record<nodeId, {x, y}>
+type NodePositionEntry = { id: string; x: number; y: number };
+type NodePositions = NodePositionEntry[] | Record<string, { x: number; y: number }>;
+
 interface SpyTialGraphProps {
   datum: DatumParsed<any>;
   cndSpec: string;
+  /** Index of the current time step in a temporal trace */
+  timeIndex?: number;
+  /** Callback to share node positions with parent for cross-frame continuity */
+  onNodePositionsChange?: (positions: NodePositions) => void;
+  /** Prior node positions from previous frame for temporal continuity */
+  priorPositions?: NodePositions;
   onCndSpecChange?: (spec: string) => void;
 }
 
 const SpyTialGraph = (props: SpyTialGraphProps) => {
-  const { datum, cndSpec } = props;
+  const { datum, cndSpec, timeIndex, priorPositions, onNodePositionsChange } = props;
   // Separate ref for the graph container - this div is NOT managed by React's children
   const graphContainerRef = useRef<HTMLDivElement>(null);
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
@@ -68,6 +80,11 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const layoutRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
+  
+  // Use a ref to store the latest onNodePositionsChange callback
+  // This avoids stale closure issues in event listeners
+  const onNodePositionsChangeRef = useRef(onNodePositionsChange);
+  onNodePositionsChangeRef.current = onNodePositionsChange;
 
   // Check if server-based evaluation is available
   const dispatch = useSterlingDispatch();
@@ -159,9 +176,13 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         throw new Error('No instances found in Alloy XML');
       }
 
-      // Step 2: Create AlloyDataInstance
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[0]);
+      // Step 2: Create AlloyDataInstance for the current time index
+      // For temporal traces, select the instance at the current time step
+      const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
+      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
       console.log('Created Alloy Data Instance:', {
+        instanceIndex,
+        totalInstances: alloyDatum.instances.length,
         types: alloyDataInstance.getTypes().length,
         atoms: alloyDataInstance.getAtoms().length,
         relations: alloyDataInstance.getRelations().length
@@ -245,9 +266,39 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Store the layout for reset functionality
       layoutRef.current = layoutResult.layout;
 
-      // Step 7: Render the layout
+      // Step 7: Render the layout with prior positions for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
-        await graphElementRef.current.renderLayout(layoutResult.layout);
+        // Log the nodes in the new layout
+        const newLayoutNodeIds = layoutResult.layout.nodes?.map((n: any) => n.id || n.name || n.label) || [];
+        console.log('Nodes in new layout:', newLayoutNodeIds);
+        
+        // Check if we have prior positions to use
+        const hasPriorPositions = priorPositions && (
+          Array.isArray(priorPositions) ? priorPositions.length > 0 : Object.keys(priorPositions).length > 0
+        );
+        const renderOptions = hasPriorPositions ? { priorPositions } : undefined;
+        
+        // Debug: Check which prior position IDs match new layout node IDs
+        if (hasPriorPositions && priorPositions) {
+          const priorIds = Array.isArray(priorPositions) 
+            ? priorPositions.map((p: NodePositionEntry) => p.id)
+            : Object.keys(priorPositions);
+          const matchingIds = priorIds.filter((id: string) => newLayoutNodeIds.includes(id));
+          console.log('Prior position IDs:', priorIds);
+          console.log('Matching IDs between prior positions and new layout:', matchingIds);
+          console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
+          
+          // Show actual position values for matching nodes
+          if (Array.isArray(priorPositions)) {
+            const matchingPositions = priorPositions.filter((p: NodePositionEntry) => newLayoutNodeIds.includes(p.id));
+            console.log('Prior positions for matching nodes:', matchingPositions);
+          }
+        }
+        
+        console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(priorPositions) ? priorPositions.length : Object.keys(priorPositions!).length) + ' nodes' : 'none');
+        
+        // Render - the layout-complete event will capture final positions
+        await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
       }
 
       setIsLoading(false);
@@ -256,7 +307,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, resetLayout, canUseServerEval, createServerCallback]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, canUseServerEval, createServerCallback, priorPositions]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
@@ -274,6 +325,45 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       display: block;
     `;
 
+    // Listen for layout-complete event to capture FINAL positions after WebCola constraints
+    // This is crucial for temporal consistency - we want positions AFTER constraints are applied
+    const handleLayoutComplete = (e: CustomEvent) => {
+      const detail = e.detail;
+      console.log('Layout complete! Capturing final positions for temporal consistency.');
+      
+      if (detail.nodePositions && detail.nodePositions.length > 0) {
+        console.log(`Captured ${detail.nodePositions.length} final node positions from layout-complete event`);
+        // Log a few for debugging
+        detail.nodePositions.slice(0, 3).forEach((p: NodePositionEntry) => {
+          console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
+        });
+        
+        // Notify parent with the FINAL positions (post-constraints)
+        if (onNodePositionsChangeRef.current) {
+          onNodePositionsChangeRef.current(detail.nodePositions);
+        }
+      }
+    };
+
+    // Listen for node-drag-end to update positions when user drags nodes
+    // This ensures dragged positions are preserved across time steps
+    const handleNodeDragEnd = (e: CustomEvent) => {
+      const detail = e.detail;
+      console.log(`Node ${detail.id} dragged to (${detail.current.x.toFixed(2)}, ${detail.current.y.toFixed(2)})`);
+      
+      // Get current positions and update with the dragged node
+      if (graphElement.getNodePositions) {
+        const currentPositions = graphElement.getNodePositions();
+        if (currentPositions && onNodePositionsChangeRef.current) {
+          // The positions already include the dragged position, so just notify parent
+          onNodePositionsChangeRef.current(currentPositions);
+        }
+      }
+    };
+
+    graphElement.addEventListener('layout-complete', handleLayoutComplete as EventListener);
+    graphElement.addEventListener('node-drag-end', handleNodeDragEnd as EventListener);
+
     graphContainerRef.current.appendChild(graphElement);
     graphElementRef.current = graphElement;
     isInitializedRef.current = true;
@@ -281,6 +371,9 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     // Cleanup on unmount
     return () => {
       if (graphElementRef.current) {
+        graphElementRef.current.removeEventListener('layout-complete', handleLayoutComplete as EventListener);
+        graphElementRef.current.removeEventListener('node-drag-end', handleNodeDragEnd as EventListener);
+        
         if (graphElementRef.current.clear) {
           graphElementRef.current.clear();
         }
@@ -295,12 +388,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     };
   }, []); // Only run once on mount
 
-  // Load graph when datum or cndSpec changes
+  // Load graph when datum, cndSpec, or timeIndex changes
   useEffect(() => {
     if (graphElementRef.current) {
       loadGraph();
     }
-  }, [datum.data, cndSpec, loadGraph]);
+  }, [datum.data, cndSpec, timeIndex, loadGraph]);
 
   return (
     <div 

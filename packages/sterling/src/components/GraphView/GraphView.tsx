@@ -29,7 +29,7 @@ const GraphView = () => {
 
   return (
     <Pane className='grid grid-flow-col divide-x divide-dashed'>
-      {datum && (
+      {datum ? (
         <div className='relative'>
           <Pane>
             <PaneHeader className='border-b'>
@@ -46,7 +46,7 @@ const GraphView = () => {
             </PaneBody>
           </Pane>
         </div>
-      )}
+      ) : null}
     </Pane>
   );
 };

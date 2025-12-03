@@ -34,22 +34,10 @@ const Sterling = (props: SterlingProps) => {
     };
   }, [url, dispatch]);
 
-  // Mount the SpyTial error message modal once globally
-  useEffect(() => {
-    if (window.mountErrorMessageModal) {
-      try {
-        window.mountErrorMessageModal('spytial-error-modal');
-        console.log('SpyTial Error Message Modal mounted');
-      } catch (err) {
-        console.error('Failed to mount SpyTial Error Message Modal:', err);
-      }
-    }
-  }, []);
+  // Note: SpyTial error modal is mounted in GraphLayoutDrawer.tsx for contextual display
 
   return (
     <>
-      {/* SpyTial error modal mount point */}
-      <div id="spytial-error-modal" />
       <Dashboard
         rightPaneCollapsed={drawerCollapsed}
         rightPaneInitialWidth={layout.drawerWidth}

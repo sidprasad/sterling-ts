@@ -124,10 +124,7 @@ const GraphLayoutDrawer = () => {
       
       <div className="p-4 flex-1 flex flex-col">
         <div className="sticky top-0 z-10 mb-4 rounded border bg-white/90 p-3 backdrop-blur-sm shadow-sm flex items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-gray-800">Layout tools</div>
-            <div className="text-xs text-gray-500">Upload a spec, tweak it, then apply.</div>
-          </div>
+
           <button 
             onClick={applyLayout} 
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

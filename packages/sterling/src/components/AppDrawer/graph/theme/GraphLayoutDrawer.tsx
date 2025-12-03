@@ -20,6 +20,20 @@ const GraphLayoutDrawer = () => {
   const cndEditorRef = useRef<HTMLDivElement>(null);
   const [isEditorMounted, setIsEditorMounted] = useState(false);
   
+  // The embedded SpyTial UI expects Bootstrap styling; load it here to avoid an unstyled mount.
+  useEffect(() => {
+    const existingBootstrap = document.getElementById('spytial-bootstrap-stylesheet');
+    if (!existingBootstrap) {
+      const link = document.createElement('link');
+      link.id = 'spytial-bootstrap-stylesheet';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+      link.integrity = 'sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM';
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    }
+  }, []);
+  
   if (!datum) return null;
 
   /** Load from XML (if provided) once. */

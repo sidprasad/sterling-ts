@@ -11,6 +11,11 @@ declare global {
   interface Window {
     mountCndLayoutInterface?: (elementId?: string) => void;
     getCurrentCNDSpecFromReact?: () => string;
+    // Error display functions from SpyTial
+    mountErrorMessageModal?: (elementId?: string) => void;
+    showParseError?: (message: string, context: string) => void;
+    showGeneralError?: (message: string) => void;
+    clearAllErrors?: () => void;
   }
 }
 
@@ -18,7 +23,9 @@ const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
   const cndEditorRef = useRef<HTMLDivElement>(null);
+  const errorMountRef = useRef<HTMLDivElement>(null);
   const [isEditorMounted, setIsEditorMounted] = useState(false);
+  const [isErrorMounted, setIsErrorMounted] = useState(false);
   
   // The embedded SpyTial UI expects Bootstrap styling; load it here to avoid an unstyled mount.
   useEffect(() => {
@@ -33,6 +40,19 @@ const GraphLayoutDrawer = () => {
       document.head.appendChild(link);
     }
   }, []);
+
+  // Mount the SpyTial error modal in the layout drawer
+  useEffect(() => {
+    if (errorMountRef.current && window.mountErrorMessageModal && !isErrorMounted) {
+      try {
+        window.mountErrorMessageModal('layout-error-mount');
+        setIsErrorMounted(true);
+        console.log('SpyTial Error Modal mounted in Layout Drawer');
+      } catch (err) {
+        console.error('Failed to mount SpyTial Error Modal:', err);
+      }
+    }
+  }, [isErrorMounted]);
   
   if (!datum) return null;
 
@@ -66,10 +86,16 @@ const GraphLayoutDrawer = () => {
   const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     
+    // Clear any existing errors before applying new layout
+    if (window.clearAllErrors) {
+      window.clearAllErrors();
+    }
+    
     // Get the CnD spec from the React component
     const cndSpecText = window.getCurrentCNDSpecFromReact?.() || '';
     
     // Update the CnD spec in Redux state - this will trigger SpyTialGraph to re-render
+    // Any parse errors or layout errors will be shown via the SpyTial error modal
     dispatch(cndSpecSet({ datum, spec: cndSpecText }));
   };
 
@@ -88,38 +114,53 @@ const GraphLayoutDrawer = () => {
   };
 
   return (
-    <div className='absolute inset-0 flex flex-col overflow-y-auto p-4'>
-      <div className="mt-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Upload layout specification file
-        </label>
-        <input 
-          type="file" 
-          accept=".cnd" 
-          onChange={handleFileUpload}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-        />
-      </div>
-      
-      {/* CnD Layout Interface mount point */}
+    <div className='absolute inset-0 flex flex-col overflow-y-auto'>
+      {/* Error display area - SpyTial mounts here, pushes content down */}
       <div 
-        id="cnd-editor-mount" 
-        ref={cndEditorRef}
-        className="flex-1 min-h-[300px] mt-4"
-      ></div>
+        id="layout-error-mount"
+        ref={errorMountRef}
+        className="bg-white flex-shrink-0"
+      />
       
-      {!isEditorMounted && (
-        <div className="text-gray-500 text-sm mt-2">
-          Loading CnD Layout Editor...
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="sticky top-0 z-10 mb-4 rounded border bg-white/90 p-3 backdrop-blur-sm shadow-sm flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-800">Layout tools</div>
+            <div className="text-xs text-gray-500">Upload a spec, tweak it, then apply.</div>
+          </div>
+          <button 
+            onClick={applyLayout} 
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Apply Layout
+          </button>
         </div>
-      )}
-      
-      <button 
-        onClick={applyLayout} 
-        className="mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      >
-        Apply Layout
-      </button>
+
+        <div className="mt-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Upload layout specification file
+          </label>
+          <input 
+            type="file" 
+            accept=".cnd" 
+            onChange={handleFileUpload}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+        </div>
+        
+        {/* CnD Layout Interface mount point */}
+        <div 
+          id="cnd-editor-mount" 
+          ref={cndEditorRef}
+          className="flex-1 min-h-[300px] mt-4"
+        />
+        
+        {!isEditorMounted && (
+          <div className="text-gray-500 text-sm mt-2">
+            Loading CnD Layout Editor...
+          </div>
+        )}
+      </div>
     </div>
   );
 };

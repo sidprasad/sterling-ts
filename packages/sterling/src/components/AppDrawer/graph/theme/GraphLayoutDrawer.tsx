@@ -123,26 +123,23 @@ const GraphLayoutDrawer = () => {
       />
       
       <div className="p-4 flex-1 flex flex-col">
-        <div className="sticky top-0 z-10 mb-4 rounded border bg-white/90 p-3 backdrop-blur-sm shadow-sm flex items-center justify-between gap-3">
-
+        <div className="sticky top-0 z-10 mb-4 rounded border bg-white/95 p-3 backdrop-blur-sm shadow-sm flex flex-col gap-2">
           <button 
             onClick={applyLayout} 
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Apply Layout
           </button>
-        </div>
-
-        <div className="mt-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Upload layout specification file
+          <label className="flex items-center justify-between text-xs text-gray-600">
+            <span className="sr-only">Upload CnD layout file</span>
+            <span className="text-[11px] text-gray-500">Upload .cnd</span>
+            <input 
+              type="file" 
+              accept=".cnd" 
+              onChange={handleFileUpload}
+              className="block w-full text-[11px] text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border file:border-gray-200 file:bg-white file:text-xs file:font-medium hover:file:bg-gray-50"
+            />
           </label>
-          <input 
-            type="file" 
-            accept=".cnd" 
-            onChange={handleFileUpload}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-          />
         </div>
         
         {/* CnD Layout Interface mount point */}

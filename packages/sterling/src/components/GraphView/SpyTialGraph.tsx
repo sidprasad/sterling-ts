@@ -203,7 +203,8 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         hasServerEvaluation: sterlingEvaluator.hasServerEvaluation()
       });
 
-      // Step 4: Parse layout specification (use empty string if no spec provided)
+      // Step 4: Parse layout specification
+      // Note: An empty cndSpec is valid and has semantic meaning (no constraints/directives)
       let layoutSpec = null;
       try {
         layoutSpec = window.CndCore.parseLayoutSpec(cndSpec || '');
@@ -215,7 +216,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         if (window.showParseError) {
           window.showParseError(parseError.message, 'Layout Specification');
         }
-        // Continue with empty layout spec
+        // Continue with empty layout spec on parse error
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
 

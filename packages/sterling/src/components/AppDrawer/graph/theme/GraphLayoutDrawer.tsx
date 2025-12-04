@@ -9,7 +9,10 @@ import { Icon } from '@chakra-ui/react';
 // Declare the window functions from SpyTial's react-component-integration
 declare global {
   interface Window {
-    mountCndLayoutInterface?: (elementId?: string) => void;
+    CndCore?: {
+      mountCndLayoutInterface?: (elementId: string, options?: CndLayoutInterfaceOptions) => void;
+    };
+    mountCndLayoutInterface?: (elementId?: string, options?: CndLayoutInterfaceOptions) => void;
     getCurrentCNDSpecFromReact?: () => string;
     // Error display functions from SpyTial
     mountErrorMessageModal?: (elementId?: string) => void;
@@ -17,6 +20,18 @@ declare global {
     showGeneralError?: (message: string) => void;
     clearAllErrors?: () => void;
   }
+}
+
+// Options for mounting the CnD Layout Interface
+interface CndLayoutInterfaceOptions {
+  initialYamlValue?: string;
+  initialIsNoCodeView?: boolean;
+  initialConstraints?: any[];
+  initialDirectives?: CndDirective[];
+}
+
+interface CndDirective {
+  flag: string;
 }
 
 const GraphLayoutDrawer = () => {
@@ -61,12 +76,26 @@ const GraphLayoutDrawer = () => {
 
   // Mount the CnD Layout Interface from SpyTial
   useEffect(() => {
-    // Mount the CnD editor
-    if (cndEditorRef.current && window.mountCndLayoutInterface && !isEditorMounted) {
+    // Mount the CnD editor with default directives
+    if (cndEditorRef.current && !isEditorMounted) {
+      // Default options with hideDisconnectedBuiltIns directive
+      const defaultOptions: CndLayoutInterfaceOptions = {
+        initialYamlValue: 'directives:\n  - flag: hideDisconnectedBuiltIns',
+        initialDirectives: [{ flag: 'hideDisconnectedBuiltIns' }]
+      };
+
       try {
-        window.mountCndLayoutInterface('cnd-editor-mount');
-        setIsEditorMounted(true);
-        console.log('CnD Layout Interface mounted');
+        // Try CndCore.mountCndLayoutInterface first (newer API)
+        if (window.CndCore?.mountCndLayoutInterface) {
+          window.CndCore.mountCndLayoutInterface('cnd-editor-mount', defaultOptions);
+          setIsEditorMounted(true);
+          console.log('CnD Layout Interface mounted via CndCore with default directives');
+        } else if (window.mountCndLayoutInterface) {
+          // Fall back to window.mountCndLayoutInterface
+          window.mountCndLayoutInterface('cnd-editor-mount', defaultOptions);
+          setIsEditorMounted(true);
+          console.log('CnD Layout Interface mounted with default directives');
+        }
       } catch (err) {
         console.error('Failed to mount CnD Layout Interface:', err);
       }

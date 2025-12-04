@@ -43,8 +43,10 @@ function dataReceived(
       // Choose the first index as the first instance to display
       state.timeByDatumId[datumId] = 0;
 
-      // If a CnD spec is present, load it into the state. 
-      state.cndSpecByDatumId[datumId] = alloyDatum.parsed.visualizerConfig?.cnd ?? ''
+      // If a CnD spec is present, load it into the state.
+      // Otherwise, use the default directive to hide disconnected built-ins.
+      const DEFAULT_CND_SPEC = 'directives:\n  - flag: hideDisconnectedBuiltIns';
+      state.cndSpecByDatumId[datumId] = alloyDatum.parsed.visualizerConfig?.cnd ?? DEFAULT_CND_SPEC;
 
       // TODO: Remove during refactor
       state.hiddenByDatumId[datumId] = {};

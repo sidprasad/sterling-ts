@@ -78,6 +78,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCndCoreReady, setIsCndCoreReady] = useState(typeof window.CndCore !== 'undefined');
   const layoutRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
   
@@ -85,6 +86,40 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   // This avoids stale closure issues in event listeners
   const onNodePositionsChangeRef = useRef(onNodePositionsChange);
   onNodePositionsChangeRef.current = onNodePositionsChange;
+
+  // Poll for CndCore availability if not ready yet
+  useEffect(() => {
+    if (isCndCoreReady) return;
+
+    const checkCndCore = () => {
+      if (typeof window.CndCore !== 'undefined' && window.CndCore.parseLayoutSpec) {
+        console.log('CndCore is now available');
+        setIsCndCoreReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkCndCore()) return;
+
+    // Poll every 100ms for up to 10 seconds
+    let attempts = 0;
+    const maxAttempts = 100;
+    const intervalId = setInterval(() => {
+      attempts++;
+      if (checkCndCore() || attempts >= maxAttempts) {
+        clearInterval(intervalId);
+        if (attempts >= maxAttempts && !isCndCoreReady) {
+          console.error('CndCore did not load within timeout');
+          setError('CnD Core library failed to load. Please refresh the page.');
+          setIsLoading(false);
+        }
+      }
+    }, 100);
+
+    return () => clearInterval(intervalId);
+  }, [isCndCoreReady]);
 
   // Check if server-based evaluation is available
   const dispatch = useSterlingDispatch();
@@ -389,12 +424,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     };
   }, []); // Only run once on mount
 
-  // Load graph when datum, cndSpec, or timeIndex changes
+  // Load graph when datum, cndSpec, timeIndex changes, BUT only after CndCore is ready
   useEffect(() => {
-    if (graphElementRef.current) {
+    if (graphElementRef.current && isCndCoreReady) {
       loadGraph();
     }
-  }, [datum.data, cndSpec, timeIndex, loadGraph]);
+  }, [datum.data, cndSpec, timeIndex, loadGraph, isCndCoreReady]);
 
   return (
     <div 

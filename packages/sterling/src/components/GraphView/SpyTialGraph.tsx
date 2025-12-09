@@ -1,9 +1,5 @@
-import { DatumParsed, evalRequested, evalReceived } from '@/sterling-connection';
+import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createSterlingEvaluator, ServerEvalCallback } from './SterlingEvaluator';
-import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
-import { selectIsConnected, selectEvaluatorIsEnabled } from '../../state/selectors';
-import store from '../../state/store';
 
 // Declare the global CndCore type
 declare global {
@@ -13,7 +9,7 @@ declare global {
         parseAlloyXML: (xml: string) => any;
       };
       AlloyDataInstance: new (instance: any) => any;
-      ForgeEvaluator: new () => {
+      SGraphQueryEvaluator: new () => {
         initialize: (context: { sourceData: string }) => void;
       };
       parseLayoutSpec: (spec: string) => any;
@@ -121,56 +117,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     return () => clearInterval(intervalId);
   }, [isCndCoreReady]);
 
-  // Check if server-based evaluation is available
-  const dispatch = useSterlingDispatch();
-  const isConnected = useSterlingSelector(selectIsConnected);
-  const evaluatorEnabled = useSterlingSelector(selectEvaluatorIsEnabled);
-  const canUseServerEval = isConnected && evaluatorEnabled && datum.evaluator === true;
-
-  // Create a server callback that uses Redux dispatch/subscribe pattern
-  const createServerCallback = useCallback((): ServerEvalCallback | null => {
-    if (!canUseServerEval) {
-      return null;
-    }
-
-    return (expression: string): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const evalId = `eval-${datum.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const TIMEOUT = 5000; // 5 second timeout
-        
-        let unsubscribe: (() => void) | null = null;
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
-        
-        // Set up listener for eval results
-        unsubscribe = store.subscribe(() => {
-          const lastAction = (store.getState() as any).lastAction;
-          if (
-            lastAction &&
-            lastAction.type === evalReceived.type &&
-            lastAction.payload?.id === evalId
-          ) {
-            if (timeoutId) clearTimeout(timeoutId);
-            if (unsubscribe) unsubscribe();
-            resolve(lastAction.payload.result || '');
-          }
-        });
-
-        // Set up timeout
-        timeoutId = setTimeout(() => {
-          if (unsubscribe) unsubscribe();
-          reject(new Error('Server evaluation timed out'));
-        }, TIMEOUT);
-
-        // Dispatch the evaluation request with required id and datumId
-        dispatch(evalRequested({ 
-          id: evalId,
-          datumId: datum.id,
-          expression 
-        }));
-      });
-    };
-  }, [canUseServerEval, datum.id, dispatch]);
-
   /**
    * Reset the graph layout to the initial state
    */
@@ -223,20 +169,11 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         relations: alloyDataInstance.getRelations().length
       });
 
-      // Step 3: Create SterlingEvaluator (with optional server callback)
-      // When server evaluation is available, we use it as the preferred method
-      // and fall back to ForgeEvaluator when the server is not responding
-      const serverCallback = createServerCallback();
-      const sterlingEvaluator = createSterlingEvaluator(
-        alloyXml,
-        serverCallback,
-        canUseServerEval ? datum.id : null
-      );
+      // Step 3: Create SGraphQueryEvaluator for layout generation
+      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      sgraphEvaluator.initialize({ sourceData: alloyXml });
       
-      console.log('Created SterlingEvaluator:', {
-        isReady: sterlingEvaluator.isReady(),
-        hasServerEvaluation: sterlingEvaluator.hasServerEvaluation()
-      });
+      console.log('Created SGraphQueryEvaluator for layout generation');
 
       // Step 4: Parse layout specification
       // Note: An empty cndSpec is valid and has semantic meaning (no constraints/directives)
@@ -255,12 +192,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
 
-      // Step 5: Create LayoutInstance with SterlingEvaluator
+      // Step 5: Create LayoutInstance with SGraphQueryEvaluator
       const ENABLE_ALIGNMENT_EDGES = true;
       const instanceNumber = 0;
       const layoutInstance = new window.CndCore.LayoutInstance(
         layoutSpec,
-        sterlingEvaluator,
+        sgraphEvaluator,
         instanceNumber,
         ENABLE_ALIGNMENT_EDGES
       );
@@ -343,7 +280,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, canUseServerEval, createServerCallback, priorPositions]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorPositions]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {

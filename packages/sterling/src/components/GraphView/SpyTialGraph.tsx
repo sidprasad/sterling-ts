@@ -10,7 +10,7 @@ declare global {
       };
       AlloyDataInstance: new (instance: any) => any;
       SGraphQueryEvaluator: new () => {
-        initialize: (context: { sourceData: string }) => void;
+        initialize: (context: { sourceData: any }) => void; // sourceData should be IDataInstance (AlloyDataInstance)
         evaluate: (expression: string, config?: any) => any;
       };
       parseLayoutSpec: (spec: string) => any;
@@ -194,7 +194,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
       // Step 3: Create SGraphQueryEvaluator for layout generation
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
-      sgraphEvaluator.initialize({ sourceData: alloyXml });
+      sgraphEvaluator.initialize({ sourceData: alloyDataInstance }); // Pass AlloyDataInstance, not raw XML
       
       console.log('Created SGraphQueryEvaluator for layout generation');
 

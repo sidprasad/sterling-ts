@@ -75,9 +75,9 @@ const SynthesisModePanel = () => {
         }
 
         // Evaluate against all instances to show matches
-        const evaluator = new window.CndCore.SGraphQueryEvaluator();
         const matchesByInstance = instances.map((inst, idx) => {
-          evaluator.initialize({ sourceData: inst });
+          const evaluator = new window.CndCore.SGraphQueryEvaluator();
+          evaluator.initialize({ sourceData: inst }); // Pass AlloyDataInstance
           const evalResult = evaluator.evaluate(result.expression);
           return {
             instanceIndex: idx,
@@ -108,9 +108,9 @@ const SynthesisModePanel = () => {
         }
 
         // Evaluate against all instances
-        const evaluator = new window.CndCore.SGraphQueryEvaluator();
         const pairMatchesByInstance = instances.map((inst, idx) => {
-          evaluator.initialize({ sourceData: inst });
+          const evaluator = new window.CndCore.SGraphQueryEvaluator();
+          evaluator.initialize({ sourceData: inst }); // Pass AlloyDataInstance
           const evalResult = evaluator.evaluate(result.expression);
           const tuples = evalResult.selectedTuplesAll ? evalResult.selectedTuplesAll() : [];
           return {

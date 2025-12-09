@@ -1,16 +1,38 @@
 import { PaneTitle } from '@/sterling-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
+import { selectActiveDatum, selectCnDSpec, selectIsSynthesisActive } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
+import { enterSynthesisMode } from '../../../../state/synthesis/synthesisSlice';
 import { RiHammerFill } from 'react-icons/ri';
+import { MdScience } from 'react-icons/md';
 import { Icon } from '@chakra-ui/react';
+import SynthesisModePanel from '../synthesis/SynthesisModePanel';
 
 // Declare the window functions from SpyTial's react-component-integration
 declare global {
   interface Window {
     CndCore?: {
       mountCndLayoutInterface?: (elementId: string, options?: CndLayoutInterfaceOptions) => void;
+      AlloyInstance: {
+        parseAlloyXML: (xml: string) => any;
+      };
+      AlloyDataInstance: new (instance: any) => any;
+      SGraphQueryEvaluator: new () => {
+        initialize: (context: { sourceData: string }) => void;
+        evaluate: (expression: string, config?: any) => any;
+      };
+      synthesizeAtomSelector: (
+        examples: Array<{ atoms: any[]; dataInstance: any }>,
+        maxDepth?: number
+      ) => string;
+      synthesizeAtomSelectorWithExplanation: (
+        examples: Array<{ atoms: any[]; dataInstance: any }>,
+        maxDepth?: number
+      ) => {
+        expression: string;
+        examples: Array<{ why: any }>;
+      };
     };
     mountCndLayoutInterface?: (elementId?: string, options?: CndLayoutInterfaceOptions) => void;
     getCurrentCNDSpecFromReact?: () => string;
@@ -37,10 +59,16 @@ interface CndDirective {
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
+  const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
   const cndEditorRef = useRef<HTMLDivElement>(null);
   const errorMountRef = useRef<HTMLDivElement>(null);
   const [isEditorMounted, setIsEditorMounted] = useState(false);
   const [isErrorMounted, setIsErrorMounted] = useState(false);
+  
+  // If synthesis mode is active, show synthesis panel instead
+  if (isSynthesisActive) {
+    return <SynthesisModePanel />;
+  }
   
   // The embedded SpyTial UI expects Bootstrap styling; load it here to avoid an unstyled mount.
   useEffect(() => {
@@ -158,6 +186,13 @@ const GraphLayoutDrawer = () => {
             className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Apply Layout
+          </button>
+          <button 
+            onClick={() => dispatch(enterSynthesisMode({ numInstances: 3 }))} 
+            className="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center justify-center gap-2"
+          >
+            <Icon as={MdScience} />
+            Synthesize Selector
           </button>
           <label className="flex items-center justify-between text-xs text-gray-600">
             <span className="sr-only">Upload CnD layout file</span>

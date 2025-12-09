@@ -8,6 +8,7 @@ import graphsSlice from './graphs/graphsSlice';
 import logSlice from './log/logSlice';
 import providerSlice from './provider/providerSlice';
 import scriptSlice from './script/scriptSlice';
+import synthesisSlice from './synthesis/synthesisSlice';
 
 const store = configureStore({
   reducer: {
@@ -17,6 +18,7 @@ const store = configureStore({
     log: logSlice,
     provider: providerSlice,
     script: scriptSlice,
+    synthesis: synthesisSlice,
     ui: uiSlice
   },
   middleware: (getDefaultMiddleware) =>

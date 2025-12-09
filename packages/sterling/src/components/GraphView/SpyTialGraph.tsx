@@ -11,6 +11,7 @@ declare global {
       AlloyDataInstance: new (instance: any) => any;
       SGraphQueryEvaluator: new () => {
         initialize: (context: { sourceData: string }) => void;
+        evaluate: (expression: string, config?: any) => any;
       };
       parseLayoutSpec: (spec: string) => any;
       LayoutInstance: new (
@@ -28,6 +29,23 @@ declare global {
           };
         };
       };
+      // Synthesis API
+      synthesizeAtomSelector: (
+        examples: Array<{ atoms: any[]; dataInstance: any }>,
+        maxDepth?: number
+      ) => string;
+      synthesizeBinarySelector: (
+        examples: Array<{ pairs: any[][]; dataInstance: any }>,
+        maxDepth?: number
+      ) => string;
+      synthesizeAtomSelectorWithExplanation: (
+        examples: Array<{ atoms: any[]; dataInstance: any }>,
+        maxDepth?: number
+      ) => {
+        expression: string;
+        examples: Array<{ why: any }>;
+      };
+      isSynthesisSupported: (evaluator: any) => boolean;
     };
     mountErrorMessageModal?: (elementId: string) => void;
     showParseError?: (message: string, context: string) => void;

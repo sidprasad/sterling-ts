@@ -660,3 +660,46 @@ export function selectCnDSpec(
 ): string {
   return graphsSelectors.selectCnDSpec(state.graphs, datum);
 }
+
+/**
+ * Synthesis mode selectors
+ */
+export function selectIsSynthesisActive(state: SterlingState): boolean {
+  return state.synthesis.isActive;
+}
+
+export function selectSynthesisStep(state: SterlingState): number {
+  return state.synthesis.currentStep;
+}
+
+export function selectSynthesisNumInstances(state: SterlingState): number {
+  return state.synthesis.numInstances;
+}
+
+export function selectSynthesisExamples(state: SterlingState) {
+  return state.synthesis.examples;
+}
+
+export function selectSynthesisInstances(state: SterlingState) {
+  return state.synthesis.loadedInstances;
+}
+
+export function selectSynthesisResult(state: SterlingState) {
+  return state.synthesis.result;
+}
+
+export function selectSynthesisError(state: SterlingState) {
+  return state.synthesis.error;
+}
+
+export function selectSynthesisLoading(state: SterlingState): boolean {
+  return state.synthesis.isLoading;
+}
+
+export function selectCanSynthesize(state: SterlingState): boolean {
+  return (
+    !state.synthesis.isLoading &&
+    state.synthesis.examples.length === state.synthesis.numInstances &&
+    state.synthesis.examples.every((ex) => ex.selectedAtomIds.length > 0)
+  );
+}

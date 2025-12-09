@@ -668,6 +668,10 @@ export function selectIsSynthesisActive(state: SterlingState): boolean {
   return state.synthesis.isActive;
 }
 
+export function selectSynthesisSelectorType(state: SterlingState) {
+  return state.synthesis.selectorType;
+}
+
 export function selectSynthesisStep(state: SterlingState): number {
   return state.synthesis.currentStep;
 }

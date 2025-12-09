@@ -12,13 +12,14 @@ import {
   Text,
   VStack
 } from '@chakra-ui/react';
-import { MdCheck, MdClose } from 'react-icons/md';
+import { MdArrowForward, MdCheck, MdClose } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import {
   selectActiveDatum,
   selectCnDSpec,
   selectSynthesisExamples,
-  selectSynthesisResult
+  selectSynthesisResult,
+  selectSynthesisSelectorType
 } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
 import { exitSynthesisMode } from '../../../../state/synthesis/synthesisSlice';
@@ -30,6 +31,7 @@ export const SynthesisResultStep = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
   const result = useSterlingSelector(selectSynthesisResult);
+  const selectorType = useSterlingSelector(selectSynthesisSelectorType);
   const examples = useSterlingSelector(selectSynthesisExamples);
   const cndSpec = useSterlingSelector((state) =>
     datum ? selectCnDSpec(state, datum) : ''
@@ -47,8 +49,8 @@ export const SynthesisResultStep = () => {
     // Insert the synthesized selector into the CnD spec
     // User can choose how to use it (in constraints, directives, etc.)
     const newSpec = cndSpec
-      ? `${cndSpec}\n\n# Synthesized selector\n# ${result.expression}\n`
-      : `# Synthesized selector\n# ${result.expression}\n`;
+      ? `${cndSpec}\n\n# Synthesized ${selectorType} selector\n# ${result.expression}\n`
+      : `# Synthesized ${selectorType} selector\n# ${result.expression}\n`;
 
     dispatch(cndSpecSet({ datum, spec: newSpec }));
     dispatch(exitSynthesisMode());
@@ -58,13 +60,16 @@ export const SynthesisResultStep = () => {
     dispatch(exitSynthesisMode());
   };
 
+  const isUnary = selectorType === 'unary';
+  const matchData = isUnary ? result.matchesByInstance : result.pairMatchesByInstance;
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <VStack spacing={6} align="stretch">
         {/* Synthesized selector */}
         <Box borderWidth={2} borderColor="green.500" rounded="lg" p={4} bg="green.50">
           <Text fontSize="sm" fontWeight="semibold" color="green.700" mb={2}>
-            Synthesized Selector
+            Synthesized {isUnary ? 'Unary' : 'Binary'} Selector
           </Text>
           <Code
             p={3}
@@ -84,12 +89,33 @@ export const SynthesisResultStep = () => {
             Matches Across Instances
           </Text>
           <Accordion allowMultiple>
-            {result.matchesByInstance.map((match, idx) => {
+            {matchData.map((match, idx) => {
               const example = examples[idx];
-              const allMatch =
-                example &&
-                example.selectedAtomIds.every((id) => match.matchedAtomIds.includes(id)) &&
-                example.selectedAtomIds.length === match.matchedAtomIds.length;
+              let allMatch = false;
+
+              if (isUnary) {
+                const unaryMatch = match as { instanceIndex: number; matchedAtomIds: string[] };
+                allMatch =
+                  example &&
+                  example.selectedAtomIds.every((id) => unaryMatch.matchedAtomIds.includes(id)) &&
+                  example.selectedAtomIds.length === unaryMatch.matchedAtomIds.length;
+              } else {
+                const binaryMatch = match as {
+                  instanceIndex: number;
+                  matchedPairs: [string, string][];
+                };
+                const selectedPairs = example?.selectedPairs || [];
+                allMatch =
+                  selectedPairs.every(([a, b]) =>
+                    binaryMatch.matchedPairs.some(
+                      ([ma, mb]) => (ma === a && mb === b) || (ma === b && mb === a)
+                    )
+                  ) && selectedPairs.length === binaryMatch.matchedPairs.length;
+              }
+
+              const matchCount = isUnary
+                ? (match as any).matchedAtomIds.length
+                : (match as any).matchedPairs.length;
 
               return (
                 <AccordionItem key={match.instanceIndex}>
@@ -99,7 +125,7 @@ export const SynthesisResultStep = () => {
                         <HStack>
                           <Text fontWeight="semibold">Instance {match.instanceIndex + 1}</Text>
                           <Badge colorScheme={allMatch ? 'green' : 'yellow'}>
-                            {match.matchedAtomIds.length} matches
+                            {matchCount} matches
                           </Badge>
                           {allMatch ? (
                             <Badge colorScheme="green">
@@ -114,38 +140,77 @@ export const SynthesisResultStep = () => {
                     </AccordionButton>
                   </h2>
                   <AccordionPanel pb={4}>
-                    <VStack align="stretch" spacing={2}>
-                      <div>
-                        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                          You selected:
-                        </Text>
-                        <div className="flex flex-wrap gap-1">
-                          {example?.selectedAtomIds.map((id) => (
-                            <Badge key={id} colorScheme="blue">
-                              {id}
-                            </Badge>
-                          ))}
+                    {isUnary ? (
+                      <VStack align="stretch" spacing={2}>
+                        <div>
+                          <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                            You selected:
+                          </Text>
+                          <div className="flex flex-wrap gap-1">
+                            {example?.selectedAtomIds.map((id) => (
+                              <Badge key={id} colorScheme="blue">
+                                {id}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                          Selector matches:
-                        </Text>
-                        <div className="flex flex-wrap gap-1">
-                          {match.matchedAtomIds.map((id) => (
-                            <Badge
-                              key={id}
-                              colorScheme={
-                                example?.selectedAtomIds.includes(id) ? 'green' : 'orange'
-                              }
-                            >
-                              {id}
-                              {!example?.selectedAtomIds.includes(id) && ' (extra)'}
-                            </Badge>
-                          ))}
+                        <div>
+                          <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                            Selector matches:
+                          </Text>
+                          <div className="flex flex-wrap gap-1">
+                            {(match as any).matchedAtomIds.map((id: string) => (
+                              <Badge
+                                key={id}
+                                colorScheme={
+                                  example?.selectedAtomIds.includes(id) ? 'green' : 'orange'
+                                }
+                              >
+                                {id}
+                                {!example?.selectedAtomIds.includes(id) && ' (extra)'}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </VStack>
+                      </VStack>
+                    ) : (
+                      <VStack align="stretch" spacing={2}>
+                        <div>
+                          <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                            You selected:
+                          </Text>
+                          <VStack align="stretch" spacing={1}>
+                            {example?.selectedPairs.map(([a, b], pidx) => (
+                              <HStack key={pidx}>
+                                <Badge colorScheme="blue">{a}</Badge>
+                                <MdArrowForward />
+                                <Badge colorScheme="blue">{b}</Badge>
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </div>
+                        <div>
+                          <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                            Selector matches:
+                          </Text>
+                          <VStack align="stretch" spacing={1}>
+                            {(match as any).matchedPairs.map(([a, b]: [string, string], pidx: number) => {
+                              const isExpected = example?.selectedPairs.some(
+                                ([ea, eb]) => (ea === a && eb === b) || (ea === b && eb === a)
+                              );
+                              return (
+                                <HStack key={pidx}>
+                                  <Badge colorScheme={isExpected ? 'green' : 'orange'}>{a}</Badge>
+                                  <MdArrowForward />
+                                  <Badge colorScheme={isExpected ? 'green' : 'orange'}>{b}</Badge>
+                                  {!isExpected && <Text fontSize="xs">(extra)</Text>}
+                                </HStack>
+                              );
+                            })}
+                          </VStack>
+                        </div>
+                      </VStack>
+                    )}
                   </AccordionPanel>
                 </AccordionItem>
               );

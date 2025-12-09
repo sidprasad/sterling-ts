@@ -12,28 +12,6 @@ import SynthesisModePanel from '../synthesis/SynthesisModePanel';
 // Declare the window functions from SpyTial's react-component-integration
 declare global {
   interface Window {
-    CndCore?: {
-      mountCndLayoutInterface?: (elementId: string, options?: CndLayoutInterfaceOptions) => void;
-      AlloyInstance: {
-        parseAlloyXML: (xml: string) => any;
-      };
-      AlloyDataInstance: new (instance: any) => any;
-      SGraphQueryEvaluator: new () => {
-        initialize: (context: { sourceData: string }) => void;
-        evaluate: (expression: string, config?: any) => any;
-      };
-      synthesizeAtomSelector: (
-        examples: Array<{ atoms: any[]; dataInstance: any }>,
-        maxDepth?: number
-      ) => string;
-      synthesizeAtomSelectorWithExplanation: (
-        examples: Array<{ atoms: any[]; dataInstance: any }>,
-        maxDepth?: number
-      ) => {
-        expression: string;
-        examples: Array<{ why: any }>;
-      };
-    };
     mountCndLayoutInterface?: (elementId?: string, options?: CndLayoutInterfaceOptions) => void;
     getCurrentCNDSpecFromReact?: () => string;
     // Error display functions from SpyTial
@@ -188,7 +166,7 @@ const GraphLayoutDrawer = () => {
             Apply Layout
           </button>
           <button 
-            onClick={() => dispatch(enterSynthesisMode({ numInstances: 3 }))} 
+            onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))} 
             className="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center justify-center gap-2"
           >
             <Icon as={MdScience} />

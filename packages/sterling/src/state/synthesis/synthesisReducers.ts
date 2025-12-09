@@ -8,9 +8,10 @@ type DraftState = WritableDraft<SynthesisState>;
  */
 function enterSynthesisMode(
   state: DraftState,
-  action: { payload: { numInstances: number } }
+  action: { payload: { numInstances: number; selectorType: 'unary' | 'binary' } }
 ) {
   state.isActive = true;
+  state.selectorType = action.payload.selectorType;
   state.numInstances = action.payload.numInstances;
   state.currentStep = 0;
   state.examples = [];
@@ -76,15 +77,26 @@ function addSynthesisExample(
  */
 function updateSynthesisExample(
   state: DraftState,
-  action: { payload: { instanceIndex: number; selectedAtomIds: string[] } }
+  action: { 
+    payload: { 
+      instanceIndex: number; 
+      selectedAtomIds?: string[];
+      selectedPairs?: [string, string][];
+    } 
+  }
 ) {
-  const { instanceIndex, selectedAtomIds } = action.payload;
+  const { instanceIndex, selectedAtomIds, selectedPairs } = action.payload;
   const exampleIndex = state.examples.findIndex(
     (ex) => ex.instanceIndex === instanceIndex
   );
   
   if (exampleIndex >= 0) {
-    state.examples[exampleIndex].selectedAtomIds = selectedAtomIds;
+    if (selectedAtomIds !== undefined) {
+      state.examples[exampleIndex].selectedAtomIds = selectedAtomIds;
+    }
+    if (selectedPairs !== undefined) {
+      state.examples[exampleIndex].selectedPairs = selectedPairs;
+    }
   }
 }
 

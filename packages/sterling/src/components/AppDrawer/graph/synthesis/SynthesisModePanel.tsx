@@ -12,6 +12,7 @@ import {
   selectSynthesisLoading,
   selectSynthesisNumInstances,
   selectSynthesisResult,
+  selectSynthesisSelectorType,
   selectSynthesisStep
 } from '../../../../state/selectors';
 import {
@@ -28,6 +29,7 @@ import {
 } from '../../../../state/synthesis/synthesisSlice';
 import { SynthesisSetupStep } from './SynthesisSetupStep';
 import { SynthesisExampleStep } from './SynthesisExampleStep';
+import { BinaryExampleStep } from './BinaryExampleStep';
 import { SynthesisResultStep } from './SynthesisResultStep';
 import { PaneTitle } from '@/sterling-ui';
 
@@ -38,6 +40,7 @@ const SynthesisModePanel = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
   const isActive = useSterlingSelector(selectIsSynthesisActive);
+  const selectorType = useSterlingSelector(selectSynthesisSelectorType);
   const currentStep = useSterlingSelector(selectSynthesisStep);
   const numInstances = useSterlingSelector(selectSynthesisNumInstances);
   const examples = useSterlingSelector(selectSynthesisExamples);
@@ -57,35 +60,74 @@ const SynthesisModePanel = () => {
     dispatch(startSynthesis());
 
     try {
-      // Call synthesis API
-      const result = window.CndCore.synthesizeAtomSelectorWithExplanation(
-        examples.map((ex) => ({
-          atoms: ex.selectedAtomIds.map((id) => 
-            instances[ex.instanceIndex].getAtoms().find((a: any) => a.id === id)
-          ),
-          dataInstance: instances[ex.instanceIndex]
-        })),
-        3 // maxDepth
-      );
+      if (selectorType === 'unary') {
+        // Unary selector synthesis
+        const result = window.CndCore.synthesizeAtomSelectorWithExplanation(
+          examples.map((ex) => ({
+            atomIds: ex.selectedAtomIds,
+            instanceData: instances[ex.instanceIndex]
+          })),
+          3 // maxDepth
+        );
 
-      // Evaluate against all instances to show matches
-      const evaluator = new window.CndCore.SGraphQueryEvaluator();
-      const matchesByInstance = instances.map((inst, idx) => {
-        evaluator.initialize({ sourceData: inst });
-        const evalResult = evaluator.evaluate(result.expression);
-        return {
-          instanceIndex: idx,
-          matchedAtomIds: evalResult.selectedAtoms ? evalResult.selectedAtoms() : []
-        };
-      });
+        if (!result) {
+          throw new Error('Synthesis failed - no selector found');
+        }
 
-      dispatch(
-        setSynthesisResult({
-          expression: result.expression,
-          explanation: result.examples[0]?.why,
-          matchesByInstance
-        })
-      );
+        // Evaluate against all instances to show matches
+        const evaluator = new window.CndCore.SGraphQueryEvaluator();
+        const matchesByInstance = instances.map((inst, idx) => {
+          evaluator.initialize({ sourceData: inst });
+          const evalResult = evaluator.evaluate(result.expression);
+          return {
+            instanceIndex: idx,
+            matchedAtomIds: evalResult.selectedAtoms ? evalResult.selectedAtoms() : []
+          };
+        });
+
+        dispatch(
+          setSynthesisResult({
+            expression: result.expression,
+            explanation: result.explanation || null,
+            matchesByInstance,
+            pairMatchesByInstance: []
+          })
+        );
+      } else {
+        // Binary selector synthesis
+        const result = window.CndCore.synthesizeBinarySelector(
+          examples.map((ex) => ({
+            pairs: ex.selectedPairs,
+            instanceData: instances[ex.instanceIndex]
+          })),
+          3 // maxDepth
+        );
+
+        if (!result) {
+          throw new Error('Synthesis failed - no binary selector found');
+        }
+
+        // Evaluate against all instances
+        const evaluator = new window.CndCore.SGraphQueryEvaluator();
+        const pairMatchesByInstance = instances.map((inst, idx) => {
+          evaluator.initialize({ sourceData: inst });
+          const evalResult = evaluator.evaluate(result.expression);
+          const tuples = evalResult.selectedTuplesAll ? evalResult.selectedTuplesAll() : [];
+          return {
+            instanceIndex: idx,
+            matchedPairs: tuples.map((t: string[]) => [t[0], t[1]] as [string, string])
+          };
+        });
+
+        dispatch(
+          setSynthesisResult({
+            expression: result.expression,
+            explanation: null,
+            matchesByInstance: [],
+            pairMatchesByInstance
+          })
+        );
+      }
     } catch (err: any) {
       dispatch(setSynthesisError({ error: err.message || 'Synthesis failed' }));
     }
@@ -131,7 +173,7 @@ const SynthesisModePanel = () => {
       {/* Main content area */}
       <div className="flex-1 overflow-y-auto">
         {isSetupStep && <SynthesisSetupStep />}
-        {isCollectionStep && <SynthesisExampleStep />}
+        {isCollectionStep && (selectorType === 'unary' ? <SynthesisExampleStep /> : <BinaryExampleStep />)}
         {isResultStep && <SynthesisResultStep />}
       </div>
 

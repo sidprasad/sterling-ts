@@ -56,6 +56,7 @@ export const SynthesisExampleStep = () => {
         addSynthesisExample({
           instanceIndex,
           selectedAtomIds,
+          selectedPairs: [],
           instanceData: instance
         })
       );

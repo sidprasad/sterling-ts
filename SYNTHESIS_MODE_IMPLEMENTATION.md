@@ -1,41 +1,109 @@
 # Selector Synthesis Mode - Implementation Summary
 
 ## Overview
-Implemented a complete selector synthesis workflow in Sterling that allows users to automatically generate selector expressions by providing examples across multiple instances.
+Implemented a complete selector synthesis workflow in Sterling that allows users to automatically generate selector expressions by providing examples across multiple instances. Supports both **unary selectors** (individual atoms) and **binary selectors** (pairs of atoms).
+
+## Selector Types
+
+### Unary Selectors
+- Match individual atoms (e.g., `Student & Adult`, `Node & ~Leaf`)
+- Used for: Styling specific types, filtering sets, highlighting elements
+- Selection: Click individual atoms across instances
+- API: `synthesizeAtomSelectorWithExplanation()`
+
+### Binary Selectors
+- Match pairs of atoms (e.g., `friend | coworker`, `parent.child`)
+- Used for: Relationship constraints, edge styling, tuple matching
+- Selection: Two-click workflow to form pairs
+- API: `synthesizeBinarySelector()`
+
+## User Workflow
+
+### Step 1: Setup
+- User clicks "Enable Synthesis Mode" toggle in Graph Layout Drawer
+- **Choose selector type**: Unary or Binary (with descriptions and examples)
+- Specify number of instances to load (default: 3, range: 2-10)
+- System loads N instances from solver upfront
+
+### Step 2: Example Selection
+**For Unary:**
+- Select atoms matching desired pattern in each instance
+- Visual: Checkboxes, selected count
+- Progress: N/N instances indicator
+
+**For Binary:**
+- Select pairs using two-click workflow
+- First click: Highlight first atom (purple border)
+- Second click: Complete pair, display with arrow icon
+- Visual: List of pairs with atom badges and arrows
+- Progress: N/N instances indicator
+
+### Step 3: Synthesis
+- Click "Synthesize Selector" button
+- System invokes appropriate SpyTial-Core API
+- Processing indicator (typically <1 second)
+
+### Step 4: Results
+- Display synthesized expression
+- Show per-instance match results:
+  - **Exact Match**: Selector matches exactly the selected atoms/pairs (green)
+  - **Partial Match**: Some matches missing or extras included (yellow)
+- **For Unary**: Visual diff of atom matches
+- **For Binary**: Visual diff of pair matches with arrows
+- Actions: Accept (insert into spec) or Reject (try again)
 
 ## Architecture
 
 ### State Management (`/state/synthesis/`)
 - **synthesis.ts**: Core state types and interfaces
-  - `SynthesisExample`: Captures user selections per instance
+  - `SelectorType`: 'unary' | 'binary'
+  - `SynthesisExample`: Captures selections per instance
+    - `selectedAtomIds`: For unary selectors
+    - `selectedPairs`: For binary selectors ([string, string][])
   - `SynthesisResult`: Synthesized selector with match data
+    - `matchesByInstance`: For unary results
+    - `pairMatchesByInstance`: For binary results
   - `SynthesisState`: Overall workflow state
 - **synthesisReducers.ts**: Redux reducers for all synthesis actions
+  - `enterSynthesisMode`: Accepts `selectorType` parameter
+  - `updateSynthesisExample`: Handles both atom and pair updates
 - **synthesisSlice.ts**: Redux toolkit slice
-- **synthesisSelectors.ts**: Memoized selectors for component consumption
+- **synthesisSelectors.ts**: Memoized selectors
+  - `selectCanSynthesize`: Checks appropriate field based on type
+  - `selectSynthesisSelectorType`: Current selector type
 - Integrated into main store as `state.synthesis`
 
 ### UI Components (`/components/AppDrawer/graph/synthesis/`)
 - **SynthesisModePanel.tsx**: Main orchestrator
   - Progress tracking
   - Step navigation
-  - Synthesis API integration
+  - Conditional synthesis API calls (unary vs binary)
+  - Conditional rendering of example collection components
   - Error handling
   
 - **SynthesisSetupStep.tsx**: Initial configuration
+  - **Radio group**: Select unary or binary
   - Number of instances selector (2-10)
   - Instance batch loading
-  - Workflow explanation
+  - Type-specific workflow explanations
   
-- **SynthesisExampleStep.tsx**: Example collection
+- **SynthesisExampleStep.tsx**: Unary example collection
   - Atom selection interface
-  - Per-instance example tracking
-  - Visual feedback for selections
+  - Per-instance tracking
+  - Checkbox visual feedback
+  
+- **BinaryExampleStep.tsx**: Binary example collection
+  - Two-click pair selection workflow
+  - Purple highlight for first atom
+  - Pair list display with arrows
+  - Per-instance tracking
   
 - **SynthesisResultStep.tsx**: Results display
   - Synthesized selector preview
   - Match comparison across instances
-  - Diff visualization (exact vs partial matches)
+  - **Unary**: Atom badge diffs
+  - **Binary**: Pair badge diffs with arrows
+  - Exact vs partial match indicators
   - Accept/reject actions
 
 ### Integration
@@ -45,9 +113,10 @@ Implemented a complete selector synthesis workflow in Sterling that allows users
   - CnD spec integration
 
 - **SpyTialGraph.tsx**: Type declarations
-  - Extended `window.CndCore` with synthesis APIs
-  - `synthesizeAtomSelector()`
-  - `synthesizeAtomSelectorWithExplanation()`
+  - Extended `window.CndCore` with synthesis APIs:
+    - `synthesizeAtomSelector()`
+    - `synthesizeAtomSelectorWithExplanation()`
+    - `synthesizeBinarySelector()`
   - `SGraphQueryEvaluator` for evaluation
 
 ## User Workflow

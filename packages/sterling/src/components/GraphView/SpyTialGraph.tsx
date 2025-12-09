@@ -31,23 +31,28 @@ declare global {
       };
       // Synthesis API
       synthesizeAtomSelector: (
-        examples: Array<{ atoms: any[]; dataInstance: any }>,
+        examples: { atomIds: string[]; instanceData: any }[],
         maxDepth?: number
-      ) => string;
-      synthesizeBinarySelector: (
-        examples: Array<{ pairs: any[][]; dataInstance: any }>,
-        maxDepth?: number
-      ) => string;
+      ) => { expression: string; matchesByInstance: any[] } | null;
       synthesizeAtomSelectorWithExplanation: (
-        examples: Array<{ atoms: any[]; dataInstance: any }>,
+        examples: { atomIds: string[]; instanceData: any }[],
         maxDepth?: number
       ) => {
         expression: string;
-        examples: Array<{ why: any }>;
-      };
+        explanation: string;
+        matchesByInstance: { instanceIndex: number; matchedAtomIds: string[] }[];
+      } | null;
+      synthesizeBinarySelector: (
+        examples: { pairs: [string, string][]; instanceData: any }[],
+        maxDepth?: number
+      ) => {
+        expression: string;
+        pairMatchesByInstance: { instanceIndex: number; matchedPairs: [string, string][] }[];
+      } | null;
       isSynthesisSupported: (evaluator: any) => boolean;
     };
-    mountErrorMessageModal?: (elementId: string) => void;
+    mountCndLayoutInterface?: (elementId?: string, options?: any) => void;
+    mountErrorMessageModal?: (elementId?: string) => void;
     showParseError?: (message: string, context: string) => void;
     showGeneralError?: (message: string) => void;
     showPositionalError?: (errorMessages: any) => void;

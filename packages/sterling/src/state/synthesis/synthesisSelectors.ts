@@ -60,9 +60,13 @@ export function selectSynthesisLoading(state: SynthesisState): boolean {
  * Check if ready to synthesize (all examples collected)
  */
 export function selectCanSynthesize(state: SynthesisState): boolean {
-  return (
-    !state.isLoading &&
-    state.examples.length === state.numInstances &&
-    state.examples.every((ex) => ex.selectedAtomIds.length > 0)
-  );
+  if (state.isLoading || state.examples.length !== state.numInstances) {
+    return false;
+  }
+  
+  if (state.selectorType === 'unary') {
+    return state.examples.every((ex) => ex.selectedAtomIds.length > 0);
+  } else {
+    return state.examples.every((ex) => ex.selectedPairs.length > 0);
+  }
 }

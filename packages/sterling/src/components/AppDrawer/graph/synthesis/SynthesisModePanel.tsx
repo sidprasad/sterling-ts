@@ -133,6 +133,7 @@ const SynthesisModePanel = () => {
     }
   };
 
+  // Early return AFTER all hooks
   if (!isActive) return null;
 
   const progress = currentStep === 0 ? 0 : ((currentStep - 1) / numInstances) * 100;

@@ -17,7 +17,6 @@ export const BinaryExampleStep = () => {
   const currentStep = useSterlingSelector(selectSynthesisStep);
   const examples = useSterlingSelector(selectSynthesisExamples);
   const instances = useSterlingSelector(selectSynthesisInstances);
-
   const [selectedPairs, setSelectedPairs] = useState<[string, string][]>([]);
   const [selectedFirst, setSelectedFirst] = useState<string | null>(null);
 
@@ -25,6 +24,7 @@ export const BinaryExampleStep = () => {
   const instance = instances[instanceIndex];
   const currentExample = examples.find((ex) => ex.instanceIndex === instanceIndex);
 
+  // Early return after all hooks
   if (!instance) {
     return (
       <div className="p-8 text-center">

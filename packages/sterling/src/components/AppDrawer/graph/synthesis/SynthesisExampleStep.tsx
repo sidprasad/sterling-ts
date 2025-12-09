@@ -16,13 +16,13 @@ export const SynthesisExampleStep = () => {
   const currentStep = useSterlingSelector(selectSynthesisStep);
   const examples = useSterlingSelector(selectSynthesisExamples);
   const instances = useSterlingSelector(selectSynthesisInstances);
-
   const [selectedAtomIds, setSelectedAtomIds] = useState<string[]>([]);
 
   const instanceIndex = currentStep - 1;
   const instance = instances[instanceIndex];
   const currentExample = examples.find((ex) => ex.instanceIndex === instanceIndex);
 
+  // Early return after all hooks
   if (!instance) {
     return (
       <div className="p-8 text-center">

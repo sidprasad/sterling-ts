@@ -1,17 +1,17 @@
 import { PaneTitle } from '@/sterling-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
+import { selectActiveDatum, selectCnDSpec, selectIsSynthesisActive } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
+import { enterSynthesisMode } from '../../../../state/synthesis/synthesisSlice';
 import { RiHammerFill } from 'react-icons/ri';
+import { MdScience } from 'react-icons/md';
 import { Icon } from '@chakra-ui/react';
+import SynthesisModePanel from '../synthesis/SynthesisModePanel';
 
 // Declare the window functions from SpyTial's react-component-integration
 declare global {
   interface Window {
-    CndCore?: {
-      mountCndLayoutInterface?: (elementId: string, options?: CndLayoutInterfaceOptions) => void;
-    };
     mountCndLayoutInterface?: (elementId?: string, options?: CndLayoutInterfaceOptions) => void;
     getCurrentCNDSpecFromReact?: () => string;
     // Error display functions from SpyTial
@@ -37,10 +37,14 @@ interface CndDirective {
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
+  const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
   const cndEditorRef = useRef<HTMLDivElement>(null);
   const errorMountRef = useRef<HTMLDivElement>(null);
   const [isEditorMounted, setIsEditorMounted] = useState(false);
   const [isErrorMounted, setIsErrorMounted] = useState(false);
+  
+  /** Load from XML (if provided) once. */
+  const preloadedSpec = useSterlingSelector((state) => datum ? selectCnDSpec(state, datum) : undefined);
   
   // The embedded SpyTial UI expects Bootstrap styling; load it here to avoid an unstyled mount.
   useEffect(() => {
@@ -68,16 +72,11 @@ const GraphLayoutDrawer = () => {
       }
     }
   }, [isErrorMounted]);
-  
-  if (!datum) return null;
-
-  /** Load from XML (if provided) once. */
-  const preloadedSpec = useSterlingSelector((state) => selectCnDSpec(state, datum));
 
   // Mount the CnD Layout Interface from SpyTial
   useEffect(() => {
     // Mount the CnD editor with default directives
-    if (cndEditorRef.current && !isEditorMounted) {
+    if (cndEditorRef.current && !isEditorMounted && datum && !isSynthesisActive) {
       // Default options with hideDisconnectedBuiltIns directive
       const defaultOptions: CndLayoutInterfaceOptions = {
         initialYamlValue: 'directives:\n  - flag: hideDisconnectedBuiltIns',
@@ -100,7 +99,7 @@ const GraphLayoutDrawer = () => {
         console.error('Failed to mount CnD Layout Interface:', err);
       }
     }
-  }, [isEditorMounted]);
+  }, [isEditorMounted, datum, isSynthesisActive]);
 
   // If there's a preloaded spec, we need to set it in the CnD interface
   // This would require SpyTial to expose a setter function
@@ -114,6 +113,8 @@ const GraphLayoutDrawer = () => {
 
   const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    
+    if (!datum) return;
     
     // Clear any existing errors before applying new layout
     if (window.clearAllErrors) {
@@ -129,6 +130,8 @@ const GraphLayoutDrawer = () => {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!datum) return;
+    
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -141,6 +144,16 @@ const GraphLayoutDrawer = () => {
       reader.readAsText(file);
     }
   };
+  
+  // If synthesis mode is active, show synthesis panel instead
+  if (isSynthesisActive) {
+    return <SynthesisModePanel />;
+  }
+  
+  // If no datum, render nothing
+  if (!datum) {
+    return null;
+  }
 
   return (
     <div className='absolute inset-0 flex flex-col overflow-y-auto'>
@@ -158,6 +171,13 @@ const GraphLayoutDrawer = () => {
             className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Apply Layout
+          </button>
+          <button 
+            onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))} 
+            className="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center justify-center gap-2"
+          >
+            <Icon as={MdScience} />
+            Synthesize Selector
           </button>
           <label className="flex items-center justify-between text-xs text-gray-600">
             <span className="sr-only">Upload CnD layout file</span>

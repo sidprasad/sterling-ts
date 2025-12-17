@@ -3,6 +3,7 @@ const Dotenv = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { TsconfigPathsPlugin } = require('tsconfig-paths-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
@@ -105,7 +106,23 @@ module.exports = (env, argv) => {
           description: 'Web-based visualization of relational models.'
         }
       }),
-      new MonacoWebpackPlugin()
+      new MonacoWebpackPlugin(),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: 'node_modules/spytial-core/dist/browser/spytial-core-complete.global.js',
+            to: 'vendor/spytial-core-complete.global.js'
+          },
+          {
+            from: 'node_modules/spytial-core/dist/components/react-component-integration.global.js',
+            to: 'vendor/react-component-integration.global.js'
+          },
+          {
+            from: 'node_modules/spytial-core/dist/components/react-component-integration.css',
+            to: 'vendor/react-component-integration.css'
+          }
+        ]
+      })
     ].filter(Boolean)
   };
 };

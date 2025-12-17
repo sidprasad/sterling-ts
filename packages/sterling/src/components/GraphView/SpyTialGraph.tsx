@@ -1,9 +1,5 @@
-import { DatumParsed, evalRequested, evalReceived } from '@/sterling-connection';
+import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createSterlingEvaluator, ServerEvalCallback } from './SterlingEvaluator';
-import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
-import { selectIsConnected, selectEvaluatorIsEnabled } from '../../state/selectors';
-import store from '../../state/store';
 
 // Declare the global CndCore type
 declare global {
@@ -13,8 +9,9 @@ declare global {
         parseAlloyXML: (xml: string) => any;
       };
       AlloyDataInstance: new (instance: any) => any;
-      ForgeEvaluator: new () => {
-        initialize: (context: { sourceData: string }) => void;
+      SGraphQueryEvaluator: new () => {
+        initialize: (context: { sourceData: any }) => void; // sourceData should be IDataInstance (AlloyDataInstance)
+        evaluate: (expression: string, config?: any) => any;
       };
       parseLayoutSpec: (spec: string) => any;
       LayoutInstance: new (
@@ -32,8 +29,30 @@ declare global {
           };
         };
       };
+      // Synthesis API
+      synthesizeAtomSelector: (
+        examples: { atomIds: string[]; instanceData: any }[],
+        maxDepth?: number
+      ) => { expression: string; matchesByInstance: any[] } | null;
+      synthesizeAtomSelectorWithExplanation: (
+        examples: { atomIds: string[]; instanceData: any }[],
+        maxDepth?: number
+      ) => {
+        expression: string;
+        explanation: string;
+        matchesByInstance: { instanceIndex: number; matchedAtomIds: string[] }[];
+      } | null;
+      synthesizeBinarySelector: (
+        examples: { pairs: [string, string][]; instanceData: any }[],
+        maxDepth?: number
+      ) => {
+        expression: string;
+        pairMatchesByInstance: { instanceIndex: number; matchedPairs: [string, string][] }[];
+      } | null;
+      isSynthesisSupported: (evaluator: any) => boolean;
     };
-    mountErrorMessageModal?: (elementId: string) => void;
+    mountCndLayoutInterface?: (elementId?: string, options?: any) => void;
+    mountErrorMessageModal?: (elementId?: string) => void;
     showParseError?: (message: string, context: string) => void;
     showGeneralError?: (message: string) => void;
     showPositionalError?: (errorMessages: any) => void;
@@ -69,10 +88,25 @@ interface SpyTialGraphProps {
   /** Prior node positions from previous frame for temporal continuity */
   priorPositions?: NodePositions;
   onCndSpecChange?: (spec: string) => void;
+  /** Synthesis mode: enable node selection */
+  synthesisMode?: boolean;
+  /** Selected atom IDs in synthesis mode */
+  synthesisSelectedAtoms?: string[];
+  /** Callback when atom is clicked in synthesis mode */
+  onSynthesisAtomClick?: (atomId: string) => void;
 }
 
 const SpyTialGraph = (props: SpyTialGraphProps) => {
-  const { datum, cndSpec, timeIndex, priorPositions, onNodePositionsChange } = props;
+  const { 
+    datum, 
+    cndSpec, 
+    timeIndex, 
+    priorPositions, 
+    onNodePositionsChange,
+    synthesisMode = false,
+    synthesisSelectedAtoms = [],
+    onSynthesisAtomClick
+  } = props;
   // Separate ref for the graph container - this div is NOT managed by React's children
   const graphContainerRef = useRef<HTMLDivElement>(null);
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
@@ -120,56 +154,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
     return () => clearInterval(intervalId);
   }, [isCndCoreReady]);
-
-  // Check if server-based evaluation is available
-  const dispatch = useSterlingDispatch();
-  const isConnected = useSterlingSelector(selectIsConnected);
-  const evaluatorEnabled = useSterlingSelector(selectEvaluatorIsEnabled);
-  const canUseServerEval = isConnected && evaluatorEnabled && datum.evaluator === true;
-
-  // Create a server callback that uses Redux dispatch/subscribe pattern
-  const createServerCallback = useCallback((): ServerEvalCallback | null => {
-    if (!canUseServerEval) {
-      return null;
-    }
-
-    return (expression: string): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const evalId = `eval-${datum.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const TIMEOUT = 5000; // 5 second timeout
-        
-        let unsubscribe: (() => void) | null = null;
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
-        
-        // Set up listener for eval results
-        unsubscribe = store.subscribe(() => {
-          const lastAction = (store.getState() as any).lastAction;
-          if (
-            lastAction &&
-            lastAction.type === evalReceived.type &&
-            lastAction.payload?.id === evalId
-          ) {
-            if (timeoutId) clearTimeout(timeoutId);
-            if (unsubscribe) unsubscribe();
-            resolve(lastAction.payload.result || '');
-          }
-        });
-
-        // Set up timeout
-        timeoutId = setTimeout(() => {
-          if (unsubscribe) unsubscribe();
-          reject(new Error('Server evaluation timed out'));
-        }, TIMEOUT);
-
-        // Dispatch the evaluation request with required id and datumId
-        dispatch(evalRequested({ 
-          id: evalId,
-          datumId: datum.id,
-          expression 
-        }));
-      });
-    };
-  }, [canUseServerEval, datum.id, dispatch]);
 
   /**
    * Reset the graph layout to the initial state
@@ -223,20 +207,11 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         relations: alloyDataInstance.getRelations().length
       });
 
-      // Step 3: Create SterlingEvaluator (with optional server callback)
-      // When server evaluation is available, we use it as the preferred method
-      // and fall back to ForgeEvaluator when the server is not responding
-      const serverCallback = createServerCallback();
-      const sterlingEvaluator = createSterlingEvaluator(
-        alloyXml,
-        serverCallback,
-        canUseServerEval ? datum.id : null
-      );
+      // Step 3: Create SGraphQueryEvaluator for layout generation
+      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      sgraphEvaluator.initialize({ sourceData: alloyDataInstance }); // Pass AlloyDataInstance, not raw XML
       
-      console.log('Created SterlingEvaluator:', {
-        isReady: sterlingEvaluator.isReady(),
-        hasServerEvaluation: sterlingEvaluator.hasServerEvaluation()
-      });
+      console.log('Created SGraphQueryEvaluator for layout generation');
 
       // Step 4: Parse layout specification
       // Note: An empty cndSpec is valid and has semantic meaning (no constraints/directives)
@@ -255,12 +230,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
 
-      // Step 5: Create LayoutInstance with SterlingEvaluator
+      // Step 5: Create LayoutInstance with SGraphQueryEvaluator
       const ENABLE_ALIGNMENT_EDGES = true;
       const instanceNumber = 0;
       const layoutInstance = new window.CndCore.LayoutInstance(
         layoutSpec,
-        sterlingEvaluator,
+        sgraphEvaluator,
         instanceNumber,
         ENABLE_ALIGNMENT_EDGES
       );
@@ -343,7 +318,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, canUseServerEval, createServerCallback, priorPositions]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorPositions]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
@@ -374,31 +349,54 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
           console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
         });
         
-        // Notify parent with the FINAL positions (post-constraints)
+        // Call the callback with the captured positions
+        if (onNodePositionsChangeRef.current) {
+          onNodePositionsChangeRef.current(detail.nodePositions);
+        }
+      }
+    };
+    
+    // Listen for node clicks (for synthesis mode)
+    const handleNodeClick = (e: CustomEvent) => {
+      if (synthesisMode && onSynthesisAtomClick) {
+        const nodeId = e.detail?.nodeId || e.detail?.id;
+        if (nodeId) {
+          console.log('[SpyTialGraph] Node clicked in synthesis mode:', nodeId);
+          onSynthesisAtomClick(nodeId);
+        }
+      }
+    };
+
+    // Listen for node drag end to update positions
+    const handleNodeDragEnd = (e: CustomEvent) => {
+      const detail = e.detail;
+      if (detail.nodePositions && detail.nodePositions.length > 0) {
+        console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
         if (onNodePositionsChangeRef.current) {
           onNodePositionsChangeRef.current(detail.nodePositions);
         }
       }
     };
 
-    // Listen for node-drag-end to update positions when user drags nodes
-    // This ensures dragged positions are preserved across time steps
-    const handleNodeDragEnd = (e: CustomEvent) => {
-      const detail = e.detail;
-      console.log(`Node ${detail.id} dragged to (${detail.current.x.toFixed(2)}, ${detail.current.y.toFixed(2)})`);
-      
-      // Get current positions and update with the dragged node
-      if (graphElement.getNodePositions) {
-        const currentPositions = graphElement.getNodePositions();
-        if (currentPositions && onNodePositionsChangeRef.current) {
-          // The positions already include the dragged position, so just notify parent
-          onNodePositionsChangeRef.current(currentPositions);
+    graphElement.addEventListener('layout-complete', handleLayoutComplete as EventListener);
+    graphElement.addEventListener('node-click', handleNodeClick as EventListener);
+    graphElement.addEventListener('node-drag-end', handleNodeDragEnd as EventListener);
+    // Also listen to click events on the SVG directly
+    graphElement.addEventListener('click', (e: MouseEvent) => {
+      if (synthesisMode && onSynthesisAtomClick) {
+        // Try to find the clicked node from the event target
+        const target = e.target as Element;
+        const nodeGroup = target.closest('[data-node-id]') || target.closest('g.node');
+        if (nodeGroup) {
+          const nodeId = nodeGroup.getAttribute('data-node-id') || 
+                        nodeGroup.getAttribute('id')?.replace('node-', '');
+          if (nodeId) {
+            console.log('[SpyTialGraph] Node clicked via SVG:', nodeId);
+            onSynthesisAtomClick(nodeId);
+          }
         }
       }
-    };
-
-    graphElement.addEventListener('layout-complete', handleLayoutComplete as EventListener);
-    graphElement.addEventListener('node-drag-end', handleNodeDragEnd as EventListener);
+    });
 
     graphContainerRef.current.appendChild(graphElement);
     graphElementRef.current = graphElement;
@@ -445,9 +443,27 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         style={{ 
           flex: 1,
           position: 'relative',
-          minHeight: '400px'
+          minHeight: '400px',
+          cursor: synthesisMode ? 'pointer' : 'default'
         }}
       />
+      {/* Synthesis mode overlay */}
+      {synthesisMode && (
+        <div 
+          className="absolute top-0 left-0 right-0 p-3 bg-blue-500 text-white text-sm font-medium shadow-md"
+          style={{ zIndex: 15 }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎯</span>
+            <span>Synthesis Mode: Click on nodes to select atoms</span>
+            {synthesisSelectedAtoms.length > 0 && (
+              <span className="ml-auto bg-white text-blue-600 px-2 py-1 rounded text-xs font-bold">
+                {synthesisSelectedAtoms.length} selected
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       {/* React-managed overlay elements */}
       {isLoading && (
         <div 

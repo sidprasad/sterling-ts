@@ -1,13 +1,16 @@
 import { Badge, Box, Button, Text, VStack, HStack } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MdArrowForward } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import {
   selectSynthesisExamples,
   selectSynthesisInstances,
-  selectSynthesisStep
+  selectSynthesisStep,
+  selectSynthesisNumInstances,
+  selectActiveDatum
 } from '../../../../state/selectors';
 import { addSynthesisExample, updateSynthesisExample } from '../../../../state/synthesis/synthesisSlice';
+import { buttonClicked } from '@/sterling-connection';
 
 /**
  * Binary example collection - user selects pairs of atoms
@@ -17,12 +20,24 @@ export const BinaryExampleStep = () => {
   const currentStep = useSterlingSelector(selectSynthesisStep);
   const examples = useSterlingSelector(selectSynthesisExamples);
   const instances = useSterlingSelector(selectSynthesisInstances);
+  const numInstances = useSterlingSelector(selectSynthesisNumInstances);
+  const datum = useSterlingSelector(selectActiveDatum);
   const [selectedPairs, setSelectedPairs] = useState<[string, string][]>([]);
   const [selectedFirst, setSelectedFirst] = useState<string | null>(null);
 
   const instanceIndex = currentStep - 1;
   const instance = instances[instanceIndex];
   const currentExample = examples.find((ex) => ex.instanceIndex === instanceIndex);
+
+  // Initialize selected pairs from existing example if present
+  useEffect(() => {
+    if (currentExample) {
+      setSelectedPairs(currentExample.selectedPairs);
+    } else {
+      setSelectedPairs([]);
+    }
+    setSelectedFirst(null);
+  }, [instanceIndex, currentExample]);
 
   // Early return after all hooks
   if (!instance) {
@@ -88,10 +103,19 @@ export const BinaryExampleStep = () => {
         addSynthesisExample({
           instanceIndex,
           selectedAtomIds: [], // Empty for binary
-          selectedPairs,
-          instanceData: instance
+          selectedPairs
         })
       );
+      
+      // If not the last instance, request next from Forge
+      if (currentStep < numInstances && datum?.generatorName) {
+        console.log('[BinaryExample] Requesting next instance from Forge');
+        dispatch(buttonClicked({
+          id: undefined,
+          onClick: "next",
+          context: { generatorName: datum.generatorName }
+        }));
+      }
     }
   };
 

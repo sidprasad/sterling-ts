@@ -1,6 +1,7 @@
 import { sterlingConnectionMiddleware } from '@/sterling-connection';
 import { configureStore } from '@reduxjs/toolkit';
 import { sterlingMiddleware } from '../middleware/sterlingMiddleware';
+import { synthesisMiddleware } from '../middleware/synthesisMiddleware';
 import uiSlice from './ui/uiSlice';
 import dataSlice from './data/dataSlice';
 import evaluatorSlice from './evaluator/evaluatorSlice';
@@ -22,9 +23,17 @@ const store = configureStore({
     ui: uiSlice
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().prepend(
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore these paths in the state because they contain AlloyDataInstance objects
+        ignoredPaths: ['synthesis.loadedInstances'],
+        // Ignore these action types that may pass instances
+        ignoredActionPaths: ['payload.instances']
+      }
+    }).prepend(
       sterlingConnectionMiddleware(),
-      sterlingMiddleware()
+      sterlingMiddleware(),
+      synthesisMiddleware
     )
 });
 

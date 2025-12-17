@@ -14,7 +14,7 @@ import {
   Text,
   VStack
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum } from '../../../../state/selectors';
 import {
@@ -41,7 +41,7 @@ export const SynthesisSetupStep = () => {
     dispatch(enterSynthesisMode({ numInstances, selectorType }));
 
     try {
-      // Parse the Alloy XML to get all instances
+      // Start with the current instance
       const alloyXml = datum.data;
       const parsedDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
 
@@ -49,18 +49,13 @@ export const SynthesisSetupStep = () => {
         throw new Error('No instances found in Alloy XML');
       }
 
-      // Take the first N instances (or all if fewer than N)
-      const instancesToLoad = Math.min(numInstances, parsedDatum.instances.length);
-      const instances = [];
+      // Load just the first instance from current datum
+      const firstInstance = new window.CndCore.AlloyDataInstance(
+        parsedDatum.instances[0]
+      );
 
-      for (let i = 0; i < instancesToLoad; i++) {
-        const dataInstance = new window.CndCore.AlloyDataInstance(
-          parsedDatum.instances[i]
-        );
-        instances.push(dataInstance);
-      }
-
-      dispatch(synthesisInstancesLoaded({ instances }));
+      console.log('[SynthesisSetup] Starting with first instance');
+      dispatch(synthesisInstancesLoaded({ instances: [firstInstance] }));
     } catch (err: any) {
       dispatch(synthesisLoadError({ error: err.message }));
       setIsLoading(false);
@@ -130,8 +125,8 @@ export const SynthesisSetupStep = () => {
             </NumberInputStepper>
           </NumberInput>
           <FormHelperText>
-            How many instances to analyze? More instances = better generalization, but slower
-            synthesis.
+            How many instances to analyze? More instances = better generalization.
+            New instances will be fetched from Forge/Alloy as needed.
           </FormHelperText>
         </FormControl>
 

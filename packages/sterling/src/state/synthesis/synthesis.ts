@@ -11,8 +11,6 @@ export interface SynthesisExample {
   selectedAtomIds: string[];
   /** Atom pairs selected in this instance (for binary selectors) */
   selectedPairs: [string, string][];
-  /** The full instance data for this example */
-  instanceData: any; // AlloyDataInstance
 }
 
 export interface SynthesisResult {

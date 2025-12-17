@@ -195,7 +195,7 @@ const SynthesisModePanel = () => {
             Instance {currentStep} of {numInstances}
           </Text>
 
-          {currentStep === numInstances ? (
+          {currentStep === numInstances && examples.length === numInstances ? (
             <Button
               size="sm"
               colorScheme="green"
@@ -206,14 +206,9 @@ const SynthesisModePanel = () => {
               Synthesize Selector
             </Button>
           ) : (
-            <Button
-              size="sm"
-              rightIcon={<MdArrowForward />}
-              colorScheme="blue"
-              isDisabled={!examples[currentStep - 1] || examples[currentStep - 1].selectedAtomIds.length === 0}
-            >
-              Next Instance
-            </Button>
+            <Text fontSize="sm" color="gray.600">
+              Confirm your selection to continue
+            </Text>
           )}
         </div>
       )}

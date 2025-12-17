@@ -367,6 +367,17 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       }
     };
 
+    // Listen for node drag end to update positions
+    const handleNodeDragEnd = (e: CustomEvent) => {
+      const detail = e.detail;
+      if (detail.nodePositions && detail.nodePositions.length > 0) {
+        console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
+        if (onNodePositionsChangeRef.current) {
+          onNodePositionsChangeRef.current(detail.nodePositions);
+        }
+      }
+    };
+
     graphElement.addEventListener('layout-complete', handleLayoutComplete as EventListener);
     graphElement.addEventListener('node-click', handleNodeClick as EventListener);
     graphElement.addEventListener('node-drag-end', handleNodeDragEnd as EventListener);

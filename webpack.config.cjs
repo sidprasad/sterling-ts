@@ -110,8 +110,8 @@ module.exports = (env, argv) => {
       new CopyWebpackPlugin({
         patterns: [
           {
-            from: 'node_modules/spytial-core/dist/browser/spytial-core-complete.global.min.js',
-            to: 'vendor/spytial-core-complete.global.min.js'
+            from: 'node_modules/spytial-core/dist/browser/spytial-core-complete.global.js',
+            to: 'vendor/spytial-core-complete.global.js'
           },
           {
             from: 'node_modules/spytial-core/dist/components/react-component-integration.global.js',

@@ -1,10 +1,16 @@
 #lang forge
 
+/**
+This is a simple Alloy model of binary search trees (BSTs).
+*/
 sig Tree {
     val: one Int,
     left, right: lone Tree
 }
 
+/** 
+multiline docstr
+*/
 pred bst {
     all t: Tree | {
         t not in t.^(left+right)

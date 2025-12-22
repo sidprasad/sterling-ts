@@ -75,41 +75,34 @@ const GraphLayoutDrawer = () => {
 
   // Mount the CnD Layout Interface from SpyTial
   useEffect(() => {
-    // Mount the CnD editor with default directives
+    // Mount the CnD editor with preloaded spec (if available) or default directives
     if (cndEditorRef.current && !isEditorMounted && datum && !isSynthesisActive) {
-      // Default options with hideDisconnectedBuiltIns directive
-      const defaultOptions: CndLayoutInterfaceOptions = {
-        initialYamlValue: 'directives:\n  - flag: hideDisconnectedBuiltIns',
-        initialDirectives: [{ flag: 'hideDisconnectedBuiltIns' }]
+      // Use preloaded spec if available, otherwise use default directive
+      const defaultSpec = 'directives:\n  - flag: hideDisconnectedBuiltIns';
+      const initialSpec = (preloadedSpec && preloadedSpec !== '') ? preloadedSpec : defaultSpec;
+      
+      const options: CndLayoutInterfaceOptions = {
+        initialYamlValue: initialSpec,
+        initialDirectives: (preloadedSpec && preloadedSpec !== '') ? undefined : [{ flag: 'hideDisconnectedBuiltIns' }]
       };
 
       try {
         // Try CndCore.mountCndLayoutInterface first (newer API)
         if (window.CndCore?.mountCndLayoutInterface) {
-          window.CndCore.mountCndLayoutInterface('cnd-editor-mount', defaultOptions);
+          window.CndCore.mountCndLayoutInterface('cnd-editor-mount', options);
           setIsEditorMounted(true);
-          console.log('CnD Layout Interface mounted via CndCore with default directives');
+          console.log('CnD Layout Interface mounted via CndCore' + (preloadedSpec ? ' with preloaded spec' : ' with default directives'));
         } else if (window.mountCndLayoutInterface) {
           // Fall back to window.mountCndLayoutInterface
-          window.mountCndLayoutInterface('cnd-editor-mount', defaultOptions);
+          window.mountCndLayoutInterface('cnd-editor-mount', options);
           setIsEditorMounted(true);
-          console.log('CnD Layout Interface mounted with default directives');
+          console.log('CnD Layout Interface mounted' + (preloadedSpec ? ' with preloaded spec' : ' with default directives'));
         }
       } catch (err) {
         console.error('Failed to mount CnD Layout Interface:', err);
       }
     }
-  }, [isEditorMounted, datum, isSynthesisActive]);
-
-  // If there's a preloaded spec, we need to set it in the CnD interface
-  // This would require SpyTial to expose a setter function
-  useEffect(() => {
-    if (preloadedSpec && preloadedSpec !== '' && isEditorMounted) {
-      // SpyTial would need to expose window.setCNDSpecInReact or similar
-      // For now, log that we have a preloaded spec
-      console.log('Preloaded CnD spec available:', preloadedSpec.substring(0, 100) + '...');
-    }
-  }, [preloadedSpec, isEditorMounted]);
+  }, [isEditorMounted, datum, isSynthesisActive, preloadedSpec]);
 
   const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

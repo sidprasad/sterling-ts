@@ -48,7 +48,7 @@ const SynthesisModePanel = () => {
   const result = useSterlingSelector(selectSynthesisResult);
   const error = useSterlingSelector(selectSynthesisError);
   const isLoading = useSterlingSelector(selectSynthesisLoading);
-  const canSynthesize = useSterlingSelector(selectCanSynthesize) && false; // Disable synthesis for now (UNCOMMENT TO ALLOW)
+  const canSynthesize = useSterlingSelector(selectCanSynthesize); // && false; // Disable synthesis for now (UNCOMMENT TO ALLOW)
 
   const handleExit = () => {
     dispatch(exitSynthesisMode());

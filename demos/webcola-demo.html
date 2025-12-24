@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebCola CND Demo</title>
-
+    
     <!-- Bootstrap CSS for component styling -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS -->
@@ -20,31 +19,26 @@
             background-color: #f5f5f5;
             gap: 20px;
         }
-
         .container {
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
-
         #graph-container-wrapper {
             position: relative;
             width: 100%;
             height: 600px;
             margin: 20px 0;
         }
-
         #graph-container {
             width: 100%;
             height: 600px;
             border: 2px solid #007acc;
             border-radius: 8px;
-            display: block;
-            /* Why? Because it's an inline SVG by default */
+            display: block; /* Why? Because it's an inline SVG by default */
         }
-
         #graph-controls {
             position: absolute;
             top: 10px;
@@ -60,7 +54,6 @@
             backdrop-filter: blur(4px);
             border: 1px solid rgba(0, 0, 0, 0.1);
         }
-
         button {
             background-color: #007acc;
             color: white;
@@ -71,28 +64,22 @@
             font-size: 14px;
             margin: 5px;
         }
-
         button:hover {
             background-color: #005a9e;
         }
-
         #clearGraphButton {
             background-color: red;
         }
-
         #clearGraphButton:hover {
             background-color: rgb(200, 34, 34);
         }
-
         #applyLayoutButton {
             font-size: 16px;
         }
-
         #applyLayoutButton:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
-
         textarea {
             width: 100%;
             height: 200px;
@@ -104,33 +91,19 @@
             resize: vertical;
             box-sizing: border-box;
         }
-
         label {
             font-weight: bold;
             display: block;
             margin-bottom: 5px;
         }
-
         .status {
             margin: 10px 0;
             padding: 10px;
             border-radius: 4px;
         }
-
-        .status.info {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .status.success {
-            background: #e8f5e8;
-            color: #2e7d32;
-        }
-
-        .status.error {
-            background: #ffebee;
-            color: #c62828;
-        }
+        .status.info { background: #e3f2fd; color: #1976d2; }
+        .status.success { background: #e8f5e8; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
 
         /** TODO: Add support for smaller screen sizes */
         /**
@@ -144,12 +117,12 @@
                 padding: 6px 8px;
                 gap: 6px;
             }
-
+            
             #graph-controls #clearGraphButton {
                 padding: 4px 8px;
                 font-size: 12px;
             }
-
+            
             #graph-controls #layoutFormat {
                 padding: 4px 6px;
                 font-size: 12px;
@@ -158,12 +131,10 @@
         }
     </style>
 </head>
-
 <body>
     <div class="container border" id="main-panel">
         <h1>🎯 WebCola Alloy Visualization Demo</h1>
-        <p>This demonstrates the complete Alloy XML → AlloyDataInstance → SGraphQueryEvaluator → Layout → WebCola pipeline.
-        </p>
+        <p>This demonstrates the complete Alloy XML → AlloyDataInstance → ForgeEvaluator → Layout → WebCola pipeline.</p>
         <div>
             <!-- Editable Input Fields -->
             <div>
@@ -176,16 +147,18 @@
             <div id="relation-highlighter-mount"></div>
             <div id="graph-container-wrapper">
                 <div id="graph-controls">
-                    <select title="Choose the Layout Format" class="form-select form-select-sm" id="layoutFormat"
-                        name="layoutFormat" onchange="changeLayoutFormat()" aria-label="Layout format selection">
+                    <select title="Choose the Layout Format" class="form-select form-select-sm" id="layoutFormat" name="layoutFormat" onchange="changeLayoutFormat()" aria-label="Layout format selection">
                         <option value="default" selected>Standard</option>
                         <option value="grid">Grid (Beta)</option>
                     </select>
-                    <button id="clearGraphButton" onclick="clearGraph()" title="Clear the current graph visualization"
-                        aria-label="Clear graph">Clear</button>
+                    <button id="clearGraphButton" onclick="clearGraph()" title="Clear the current graph visualization" aria-label="Clear graph">Clear</button>
                 </div>
                 <!-- Use the webcola-cnd-graph custom element -->
-                <webcola-cnd-graph id="graph-container" width="800" height="600" layoutFormat="default"
+                <webcola-cnd-graph 
+                    id="graph-container"
+                    width="800" 
+                    height="600"
+                    layoutFormat="default"
                     aria-label="Interactive graph visualization">
                 </webcola-cnd-graph>
             </div>
@@ -194,16 +167,17 @@
     <div id="cnd-panel" class="container d-flex flex-column col-md-4 border p-3">
         <h5 class="h5 mb-2 text-dark">CND Layout Specification:</h5>
         <button id="applyLayoutButton" class="mb-3" onclick="loadGraph()">Apply Layout</button>
-
+        
+        <!-- Projection Controls (shows when there are projections) -->
+        <div id="projection-controls-container" class="mb-3"></div>
+        
         <!-- Temporal Explorer for multiple instances -->
         <div id="temporal-explorer" class="mb-3" style="display: none;">
             <h6 class="h6 text-dark">Temporal Explorer:</h6>
             <div class="d-flex align-items-center gap-2 mb-2">
-                <button id="prevInstanceBtn" onclick="navigateInstance(-1)" class="btn btn-sm btn-outline-primary"
-                    disabled>◀ Prev</button>
+                <button id="prevInstanceBtn" onclick="navigateInstance(-1)" class="btn btn-sm btn-outline-primary" disabled>◀ Prev</button>
                 <span id="instanceIndicator" class="badge bg-primary">Instance 1 / 1</span>
-                <button id="nextInstanceBtn" onclick="navigateInstance(1)" class="btn btn-sm btn-outline-primary"
-                    disabled>Next ▶</button>
+                <button id="nextInstanceBtn" onclick="navigateInstance(1)" class="btn btn-sm btn-outline-primary" disabled>Next ▶</button>
             </div>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="usePriorPositions" checked>
@@ -213,7 +187,7 @@
             </div>
             <div id="priorPositionsInfo" class="small text-muted mt-1"></div>
         </div>
-
+        
         <div id="webcola-cnd-container">
             <!-- React element attached here -->
         </div>
@@ -222,24 +196,27 @@
     <!-- D3 v4 and WebCola - the working combination -->
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="../vendor/cola.js"></script>
-
-    <script
-        src="https://cdn.jsdelivr.net/npm/spytial-core@1.4.13-beta.5/dist/browser/spytial-core-complete.global.min.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/spytial-core@1.4.13-beta.5/dist/components/react-component-integration.global.js"></script>
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/spytial-core@1.4.13-beta.5/dist/components/react-component-integration.css" />
+    
+    <!-- Complete CND-Core browser bundle -->
+    <script src="../dist/browser/spytial-core-complete.global.js"></script>
+    
+    <!-- Your React component bundle (includes React runtime) -->
+    <script src="../dist/components/react-component-integration.global.js"></script>
+    <link rel="stylesheet" href="../dist/components/react-component-integration.css">
     <script>
         // Variables to store data
         let currentInstanceLayout = null;
-
+        
         // Temporal state for multiple instances
         let alloyInstances = [];           // Array of all parsed Alloy instances
         let currentInstanceIndex = 0;      // Current instance being displayed
         let priorPositions = null;         // Positions from the previous render for temporal consistency
         let parsedAlloyDatum = null;       // Cached parsed Alloy datum
-        let cachedEvaluator = null;   // Cached SGraphQueryEvaluator
+        let cachedForgeEvaluator = null;   // Cached ForgeEvaluator
         let cachedLayoutSpec = null;       // Cached layout specification
+        
+        // Projection state (maps type to selected atom)
+        window.currentProjections = {};
 
         /**
          * Get current Alloy XML from input field
@@ -255,8 +232,8 @@
          */
         function getCurrentCNDSpec() {
             // Try to get value from React component first
-            return window.getCurrentCNDSpecFromReact ?
-                window.getCurrentCNDSpecFromReact() :
+            return window.getCurrentCNDSpecFromReact ? 
+                window.getCurrentCNDSpecFromReact() : 
                 document.getElementById('webcola-cnd')?.value?.trim();
         }
 
@@ -279,15 +256,15 @@
             try {
                 console.log('Complete CND-Core browser bundle loaded successfully');
                 console.log('Available on global CndCore:', Object.keys(CndCore));
-
+                
                 // Check for Alloy-specific components
                 console.log('parseAlloyXML available:', !!CndCore.AlloyInstance.parseAlloyXML);
-                console.log('SGraphQueryEvaluator available:', !!CndCore.SGraphQueryEvaluator);
+                console.log('ForgeEvaluator available:', !!CndCore.ForgeEvaluator);
                 console.log('LayoutInstance available:', !!CndCore.LayoutInstance);
                 console.log('parseLayoutSpec available:', !!CndCore.parseLayoutSpec);
-
+                
                 updateStatus('Alloy pipeline ready! Enter Alloy XML and CND specifications now.', 'success');
-
+                
                 return true;
             } catch (error) {
                 console.error('Failed to initialize Alloy pipeline:', error);
@@ -297,17 +274,17 @@
         }
 
         /**
-         * Process Alloy data using the complete Alloy → SGraphQueryEvaluator → Layout pipeline
+         * Process Alloy data using the complete Alloy → ForgeEvaluator → Layout pipeline
          * Now supports multiple temporal instances
          */
         async function loadAlloyData() {
             try {
-                updateStatus('Processing Alloy data with SGraphQueryEvaluator...', 'info');
+                updateStatus('Processing Alloy data with ForgeEvaluator...', 'info');
 
                 // Get Alloy XML from input field
                 const alloyXml = getCurrentAlloyXml();
                 if (!alloyXml) {
-                    throw new Error('Please enter an Alloy XML instance');
+                    throw new Error('Please enter an Alloy XML instance')   ;
                 }
 
                 // Get CND specification from input field
@@ -320,7 +297,7 @@
                 updateStatus('Parsing Alloy XML...', 'info');
                 parsedAlloyDatum = CndCore.AlloyInstance.parseAlloyXML(alloyXml);
                 console.log('Parsed Alloy Datum:', parsedAlloyDatum);
-
+                
                 if (!parsedAlloyDatum.instances || parsedAlloyDatum.instances.length === 0) {
                     throw new Error('No instances found in Alloy XML');
                 }
@@ -329,24 +306,24 @@
                 alloyInstances = parsedAlloyDatum.instances;
                 currentInstanceIndex = 0;
                 priorPositions = null; // Reset prior positions when loading new data
-
+                
                 // Show temporal explorer if multiple instances
                 updateTemporalExplorer();
 
-                // Step 2: Create SGraphQueryEvaluator with Alloy data
-                updateStatus('Creating SGraphQueryEvaluator...', 'info');
+                // Step 2: Create ForgeEvaluator with Alloy data
+                updateStatus('Creating ForgeEvaluator...', 'info');
 
                 let evaluationContext = {
                     sourceData: alloyXml,
                 };
-                cachedEvaluator = new CndCore.SGraphQueryEvaluator();
-                cachedEvaluator.initialize(evaluationContext);
+                cachedForgeEvaluator = new CndCore.ForgeEvaluator();
+                cachedForgeEvaluator.initialize(evaluationContext);
 
-                console.log('Created SGraphQueryEvaluator:', cachedEvaluator);
+                console.log('Created ForgeEvaluator:', cachedForgeEvaluator);
 
                 // NOTE: Mount Evaluator REPL
                 if (window.mountEvaluatorRepl) {
-                    window.mountEvaluatorRepl('evaluator-repl-mount', cachedEvaluator, 0);
+                    window.mountEvaluatorRepl('evaluator-repl-mount', cachedForgeEvaluator, 0);
                 } else {
                     console.warn('Evaluator REPL mount function not available. Skipping REPL mount.');
                 }
@@ -373,7 +350,7 @@
                 await generateLayoutForCurrentInstance();
 
                 updateStatus(`Alloy pipeline complete! Showing instance ${currentInstanceIndex + 1} of ${alloyInstances.length}.`, 'success');
-
+                
             } catch (error) {
                 console.error('Failed to load Alloy data:', error);
                 updateStatus(`Alloy data loading failed: ${error.message}`, 'error');
@@ -385,7 +362,7 @@
          * Uses prior positions if available and enabled
          */
         async function generateLayoutForCurrentInstance() {
-            if (!alloyInstances.length || !cachedEvaluator || !cachedLayoutSpec) {
+            if (!alloyInstances.length || !cachedForgeEvaluator || !cachedLayoutSpec) {
                 throw new Error('Missing required data for layout generation');
             }
 
@@ -393,25 +370,34 @@
             console.log(`Generating layout for instance ${currentInstanceIndex + 1}/${alloyInstances.length}`);
             console.log('Using Alloy Data Instance:', alloyDataInstance);
 
-            // Step 4: Create LayoutInstance with SGraphQueryEvaluator
+            // Step 4: Create LayoutInstance with ForgeEvaluator
             updateStatus(`Creating layout for instance ${currentInstanceIndex + 1}...`, 'info');
             const ENABLE_ALIGNMENT_EDGES = true;
-
+            
             const layoutInstance = new CndCore.LayoutInstance(
-                cachedLayoutSpec,
-                cachedEvaluator,
-                currentInstanceIndex,
+                cachedLayoutSpec, 
+                cachedForgeEvaluator, 
+                currentInstanceIndex, 
                 ENABLE_ALIGNMENT_EDGES
             );
-            console.log('Created Layout Instance with SGraphQueryEvaluator:', layoutInstance);
+            console.log('Created Layout Instance with ForgeEvaluator:', layoutInstance);
 
             // Step 5: Generate layout using Alloy data instance
             updateStatus('Generating layout with Alloy data...', 'info');
-            const projections = {};
+            const projections = window.currentProjections || {};
+            console.log('Using projections:', projections);
 
             try {
                 const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
                 currentInstanceLayout = layoutResult.layout;
+
+                // Update projection controls with projection data
+                if (window.updateProjectionData && layoutResult.projectionData) {
+                    console.log('Updating projection data:', layoutResult.projectionData);
+                    window.updateProjectionData(layoutResult.projectionData);
+                } else if (layoutResult.projectionData && layoutResult.projectionData.length > 0) {
+                    console.warn('Projection data available but updateProjectionData function not found. Projection controls may not display correctly.');
+                }
 
                 if (layoutResult.error) {
                     console.error('Layout generation error:', layoutResult.error);
@@ -441,6 +427,8 @@
                     const webcolaGraphElement = document.getElementById('graph-container');
                     webcolaGraphElement.setAttribute('unsat', "");
 
+                    // Note: We still set currentInstanceLayout even with error, so visualization can show UNSAT state
+                    // The error is already displayed, no need to throw
                     return;
                 }
             } catch (error) {
@@ -483,13 +471,13 @@
 
             explorerDiv.style.display = 'block';
             indicator.textContent = `Instance ${currentInstanceIndex + 1} / ${alloyInstances.length}`;
-
+            
             const prevDisabled = currentInstanceIndex === 0;
             const nextDisabled = currentInstanceIndex === alloyInstances.length - 1;
-
+            
             prevBtn.disabled = prevDisabled;
             nextBtn.disabled = nextDisabled;
-
+            
             console.log(`Temporal explorer visible: prevBtn.disabled=${prevDisabled}, nextBtn.disabled=${nextDisabled}`);
 
             // Update prior positions info
@@ -506,9 +494,9 @@
          */
         async function navigateInstance(delta) {
             console.log(`navigateInstance called with delta=${delta}, currentIndex=${currentInstanceIndex}, totalInstances=${alloyInstances.length}`);
-
+            
             const newIndex = currentInstanceIndex + delta;
-
+            
             if (newIndex < 0 || newIndex >= alloyInstances.length) {
                 console.warn('Cannot navigate: index out of bounds');
                 return;
@@ -519,13 +507,13 @@
             // Store current positions as prior positions for the next render
             const graphElement = document.getElementById('graph-container');
             const usePriorPositionsCheckbox = document.getElementById('usePriorPositions');
-
+            
             if (usePriorPositionsCheckbox.checked && graphElement.getNodePositions) {
                 const currentPositions = graphElement.getNodePositions();
                 if (currentPositions && currentPositions.length > 0) {
                     priorPositions = currentPositions;
                     console.log(`Stored ${priorPositions.length} prior positions for temporal consistency`);
-
+                    
                     // Log a few positions for debugging
                     console.log('Sample prior positions:');
                     priorPositions.slice(0, 5).forEach(p => {
@@ -538,13 +526,13 @@
 
             currentInstanceIndex = newIndex;
             console.log(`Updated currentInstanceIndex to ${currentInstanceIndex}`);
-
+            
             updateTemporalExplorer();
 
             try {
                 await generateLayoutForCurrentInstance();
                 await renderGraph();
-
+                
                 updateStatus(`Showing instance ${currentInstanceIndex + 1} of ${alloyInstances.length}`, 'success');
             } catch (error) {
                 console.error('Error navigating to instance:', error);
@@ -559,42 +547,44 @@
         async function renderGraph() {
             clearGraph(); // Clear existing graph first
             const graphElement = document.getElementById('graph-container');
-
+            
             try {
                 if (!currentInstanceLayout) {
                     // If we have cached data, regenerate layout for current instance
                     // Otherwise, load fresh data (which resets to instance 0)
-                    if (alloyInstances.length > 0 && cachedEvaluator && cachedLayoutSpec) {
+                    if (alloyInstances.length > 0 && cachedForgeEvaluator && cachedLayoutSpec) {
                         console.log('Regenerating layout for current instance (not reloading data)');
                         await generateLayoutForCurrentInstance();
                     } else {
                         updateStatus('No layout data available. Processing Alloy data first...', 'info');
                         await loadAlloyData();
                     }
-
+                    
                     if (!currentInstanceLayout) {
-                        throw new Error('Failed to generate layout data from Alloy');
+                        // Layout generation failed - error already displayed by generateLayoutForCurrentInstance
+                        console.warn('No layout data available to render (likely due to constraint errors)');
+                        return;
                     }
                 }
 
                 updateStatus('Rendering Alloy graph with WebCola...', 'info');
-
+                
                 // Build render options with prior positions if available
                 const usePriorPositionsCheckbox = document.getElementById('usePriorPositions');
                 const shouldUsePriorPositions = usePriorPositionsCheckbox && usePriorPositionsCheckbox.checked;
-
+                
                 const renderOptions = {};
                 if (shouldUsePriorPositions && priorPositions && priorPositions.length > 0) {
                     renderOptions.priorPositions = priorPositions;
                     console.log(`Rendering with ${priorPositions.length} prior positions for temporal consistency`);
-
+                    
                     // Log prior positions for debugging
                     console.log('BEFORE (prior positions):');
                     priorPositions.slice(0, 5).forEach(p => {
                         console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
                     });
                 }
-
+                
                 // Use the real InstanceLayout data with WebCola custom element
                 await graphElement.renderLayout(currentInstanceLayout, renderOptions);
 
@@ -610,7 +600,7 @@
          */
         function clearGraph() {
             const graphElement = document.getElementById('graph-container');
-
+            
             // Clear the graph using the component's clear method
             if (graphElement.clear) {
                 graphElement.clear();
@@ -624,10 +614,10 @@
                     }
                 }
             }
-
+            
             // Clear stored layout (but preserve temporal state for navigation)
             currentInstanceLayout = null;
-
+            
             updateStatus('Graph cleared.', 'info');
         }
 
@@ -640,7 +630,7 @@
             currentInstanceIndex = 0;
             priorPositions = null;
             parsedAlloyDatum = null;
-            cachedEvaluator = null;
+            cachedForgeEvaluator = null;
             cachedLayoutSpec = null;
             updateTemporalExplorer();
             updateStatus('All state reset.', 'info');
@@ -690,7 +680,7 @@
                 graphElement.addEventListener('node-drag-end', (e) => {
                     const detail = e.detail;
                     console.log(`Node ${detail.id} dragged from (${detail.previous?.x?.toFixed(2)}, ${detail.previous?.y?.toFixed(2)}) to (${detail.current.x.toFixed(2)}, ${detail.current.y.toFixed(2)})`);
-
+                    
                     // Update prior positions with the new dragged position
                     // This ensures the dragged position is used for the next render
                     if (priorPositions) {
@@ -716,10 +706,10 @@
                 graphElement.addEventListener('layout-complete', (e) => {
                     const detail = e.detail;
                     console.log('Layout complete! Capturing final positions for temporal consistency.');
-
+                    
                     // Store the final positions from the completed layout
                     priorPositions = detail.nodePositions;
-
+                    
                     // Log positions for debugging
                     if (priorPositions && priorPositions.length > 0) {
                         console.log(`Captured ${priorPositions.length} node positions:`);
@@ -727,7 +717,7 @@
                             console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
                         });
                     }
-
+                    
                     // Update UI to show positions are available
                     updateTemporalExplorer();
                 });
@@ -738,11 +728,11 @@
                 // Only handle arrow keys when temporal explorer is visible and not typing in input
                 const temporalExplorer = document.getElementById('temporal-explorer');
                 if (temporalExplorer.style.display === 'none') return;
-
+                
                 const activeElement = document.activeElement;
-                const isTyping = activeElement.tagName === 'INPUT' ||
-                    activeElement.tagName === 'TEXTAREA' ||
-                    activeElement.isContentEditable;
+                const isTyping = activeElement.tagName === 'INPUT' || 
+                                 activeElement.tagName === 'TEXTAREA' || 
+                                 activeElement.isContentEditable;
                 if (isTyping) return;
 
                 if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
@@ -767,7 +757,46 @@
             if (window.mountErrorMessageModal) {
                 window.mountErrorMessageModal();
             }
+
+            // Mount Projection Controls
+            if (window.mountProjectionControls) {
+                window.mountProjectionControls('projection-controls-container', handleProjectionChange);
+            }
+
+            // Mount Evaluator REPL
+            if (window.mountEvaluatorRepl) {
+                window.mountEvaluatorRepl('evaluator-repl-mount', 'forge');
+            }
+
+            // Mount Relation Highlighter
+            if (window.mountRelationHighlighter) {
+                window.mountRelationHighlighter('relation-highlighter-mount');
+            }
         });
+
+        /**
+         * Handle projection selection change
+         * Updates the projections map and regenerates the layout
+         */
+        function handleProjectionChange(type, atomId) {
+            console.log(`Projection changed: ${type} -> ${atomId}`);
+            
+            // Update the projections map stored in global scope
+            if (!window.currentProjections) {
+                window.currentProjections = {};
+            }
+            window.currentProjections[type] = atomId;
+            
+            // Regenerate layout with new projections
+            if (currentInstanceIndex >= 0 && currentInstanceIndex < alloyInstances.length) {
+                generateLayoutForCurrentInstance()
+                    .then(() => renderGraph())
+                    .catch(error => {
+                        console.error('Error regenerating layout with new projection:', error);
+                        updateStatus(`Layout regeneration error: ${error.message}`, 'error');
+                    });
+            }
+        }
 
         // Expose functions globally for buttons
         window.loadGraph = loadGraph;
@@ -778,5 +807,4 @@
         window.resetAll = resetAll;
     </script>
 </body>
-
 </html>

@@ -22,6 +22,7 @@ declare global {
       ) => {
         generateLayout: (dataInstance: any, projections: object) => {
           layout: any;
+          projectionData?: any[];
           error?: {
             message: string;
             errorMessages?: any;
@@ -58,6 +59,9 @@ declare global {
     showPositionalError?: (errorMessages: any) => void;
     showGroupOverlapError?: (message: string) => void;
     clearAllErrors?: () => void;
+    // Projection control functions
+    updateProjectionData?: (projectionData: any[]) => void;
+    currentProjections?: Record<string, string>;
   }
 }
 
@@ -241,8 +245,17 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       );
 
       // Step 6: Generate layout
-      const projections = {};
+      const projections = window.currentProjections || {};
+      console.log('Using projections:', projections);
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
+
+      // Update projection controls with projection data
+      if (window.updateProjectionData && layoutResult.projectionData) {
+        console.log('Updating projection data:', layoutResult.projectionData);
+        window.updateProjectionData(layoutResult.projectionData);
+      } else if (layoutResult.projectionData && layoutResult.projectionData.length > 0) {
+        console.warn('Projection data available but updateProjectionData function not found. Projection controls may not display correctly.');
+      }
 
       // Check for layout errors
       if (layoutResult.error) {

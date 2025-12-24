@@ -1,5 +1,5 @@
 import { PaneTitle } from '@/sterling-ui';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectCnDSpec, selectIsSynthesisActive } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
@@ -19,6 +19,11 @@ declare global {
     showParseError?: (message: string, context: string) => void;
     showGeneralError?: (message: string) => void;
     clearAllErrors?: () => void;
+    // Projection control functions
+    mountProjectionControls?: (elementId: string, onChangeCallback: (type: string, atomId: string) => void) => void;
+    updateProjectionData?: (projectionData: any[]) => void;
+    // Store current projections globally (similar to webcola-demo.html)
+    currentProjections?: Record<string, string>;
   }
 }
 
@@ -40,11 +45,23 @@ const GraphLayoutDrawer = () => {
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
   const cndEditorRef = useRef<HTMLDivElement>(null);
   const errorMountRef = useRef<HTMLDivElement>(null);
+  const projectionMountRef = useRef<HTMLDivElement>(null);
   const [isEditorMounted, setIsEditorMounted] = useState(false);
   const [isErrorMounted, setIsErrorMounted] = useState(false);
+  const [isProjectionMounted, setIsProjectionMounted] = useState(false);
+  const [currentProjections, setCurrentProjections] = useState<Record<string, string>>({});
   
   /** Load from XML (if provided) once. */
   const preloadedSpec = useSterlingSelector((state) => datum ? selectCnDSpec(state, datum) : undefined);
+  
+  // Reset projections when datum changes
+  useEffect(() => {
+    setCurrentProjections({});
+    if (window.currentProjections) {
+      window.currentProjections = {};
+    }
+    console.log('Projections reset for new datum');
+  }, [datum]);
   
   // The embedded SpyTial UI expects Bootstrap styling; load it here to avoid an unstyled mount.
   useEffect(() => {
@@ -72,6 +89,48 @@ const GraphLayoutDrawer = () => {
       }
     }
   }, [isErrorMounted]);
+
+  // Handler for projection changes
+  const handleProjectionChange = useCallback((type: string, atomId: string) => {
+    console.log(`Projection changed: ${type} -> ${atomId}`);
+    
+    // Update local state
+    setCurrentProjections(prev => ({
+      ...prev,
+      [type]: atomId
+    }));
+    
+    // Update global state (for compatibility with SpyTial)
+    if (!window.currentProjections) {
+      window.currentProjections = {};
+    }
+    window.currentProjections[type] = atomId;
+    
+    // Trigger layout re-generation with new projections
+    if (datum) {
+      // Re-apply the layout with updated projections
+      // The projections will be picked up by SpyTialGraph via window.currentProjections
+      const cndSpecText = window.getCurrentCNDSpecFromReact?.() || '';
+      dispatch(cndSpecSet({ datum, spec: cndSpecText }));
+    }
+  }, [datum, dispatch]);
+
+  // Mount projection controls - remount when datum changes to get fresh projection data
+  useEffect(() => {
+    if (projectionMountRef.current && window.mountProjectionControls && datum && !isSynthesisActive) {
+      try {
+        window.mountProjectionControls('layout-projection-mount', handleProjectionChange);
+        setIsProjectionMounted(true);
+        console.log('Projection Controls mounted in Layout Drawer');
+      } catch (err) {
+        console.error('Failed to mount Projection Controls:', err);
+      }
+    }
+    // Reset mount state when datum changes to allow remounting
+    return () => {
+      setIsProjectionMounted(false);
+    };
+  }, [datum, isSynthesisActive, handleProjectionChange]);
 
   // Mount the CnD Layout Interface from SpyTial
   useEffect(() => {
@@ -158,6 +217,13 @@ const GraphLayoutDrawer = () => {
       />
       
       <div className="p-4 flex-1 flex flex-col">
+        {/* Projection Controls (shows when there are projections) */}
+        <div 
+          id="layout-projection-mount"
+          ref={projectionMountRef}
+          className="mb-3"
+        />
+        
         <div className="sticky top-0 z-10 mb-4 rounded border bg-white/95 p-3 backdrop-blur-sm shadow-sm flex flex-col gap-2">
           <button 
             onClick={applyLayout} 

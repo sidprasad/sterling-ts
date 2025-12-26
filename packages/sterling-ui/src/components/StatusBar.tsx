@@ -15,11 +15,15 @@ const StatusBarTheme = {
     left: 0,
     display: 'flex',
     alignItems: 'center',
-    px: 2,
-    fontSize: 'xs',
-    borderTop: '1px',
-    borderColor: 'gray.300',
-    bg: 'gray.100'
+    px: 4,
+    gap: 3,
+    fontSize: 'sm',
+    borderTop: '1px solid',
+    borderColor: 'whiteAlpha.200',
+    bg: 'rgba(12, 17, 30, 0.9)',
+    color: 'gray.100',
+    backdropFilter: 'saturate(180%) blur(10px)',
+    boxShadow: '0 -8px 30px rgba(15, 23, 42, 0.3)'
   }
 };
 

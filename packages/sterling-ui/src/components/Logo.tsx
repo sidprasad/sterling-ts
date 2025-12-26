@@ -11,12 +11,17 @@ const Logo = (props: CenterProps) => {
 
 const LogoTheme = {
   baseStyle: {
-    p: 1,
-    fontWeight: 'bold',
-    fontSize: 'sm',
-    letterSpacing: 'wide',
-    color: 'gray.50',
-    lineHeight: '0'
+    px: 3,
+    py: 2,
+    fontWeight: 'extrabold',
+    fontSize: 'md',
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase',
+    color: 'white',
+    bg: 'whiteAlpha.100',
+    borderRadius: 'lg',
+    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.12)',
+    lineHeight: '1'
   }
 };
 

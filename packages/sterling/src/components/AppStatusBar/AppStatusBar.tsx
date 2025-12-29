@@ -17,7 +17,7 @@ const AppStatusBar = () => {
   return (
     <StatusBar data-testid='app-status-bar'>
       <div
-        className='cursor-pointer hover:text-gray-500'
+        className='cursor-pointer transition-colors hover:text-white'
         onClick={disclosureHelp.onOpen}
       >
         <Spacer width='50px'/>
@@ -28,7 +28,7 @@ const AppStatusBar = () => {
       <Spacer />
       <Divider orientation='vertical' mx={2} />
       <div
-        className='cursor-pointer hover:text-gray-500'
+        className='cursor-pointer transition-colors hover:text-white'
         onClick={disclosureXML.onOpen}
       >
         {TEXT_manual_datum_button}
@@ -36,7 +36,7 @@ const AppStatusBar = () => {
       <ManualXMLModal isOpen={disclosureXML.isOpen} onClose={disclosureXML.onClose}/>
       <Divider orientation='vertical' mx={2} />
       <div
-        className='cursor-pointer hover:text-gray-500'
+        className='cursor-pointer transition-colors hover:text-white'
         onClick={() => {
           dispatch(dumpClicked());
         }}

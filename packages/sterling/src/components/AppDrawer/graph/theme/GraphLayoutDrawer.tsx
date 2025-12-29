@@ -208,60 +208,115 @@ const GraphLayoutDrawer = () => {
   }
 
   return (
-    <div className='absolute inset-0 flex flex-col overflow-y-auto'>
+    <div className="absolute inset-0 flex flex-col overflow-y-auto bg-slate-50/90 text-slate-900">
       {/* Error display area - SpyTial mounts here, pushes content down */}
-      <div 
+      <div
         id="layout-error-mount"
         ref={errorMountRef}
-        className="bg-white flex-shrink-0"
+        className="flex-shrink-0"
+        aria-live="polite"
       />
-      
-      <div className="p-4 flex-1 flex flex-col">
-        {/* Projection Controls (shows when there are projections) */}
-        <div 
-          id="layout-projection-mount"
-          ref={projectionMountRef}
-          className="mb-3"
-        />
-        
-        <div className="sticky top-0 z-10 mb-4 rounded border bg-white/95 p-3 backdrop-blur-sm shadow-sm flex flex-col gap-2">
-          <button 
-            onClick={applyLayout} 
-            className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Apply Layout
-          </button>
-          <button 
-            onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))} 
-            className="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center justify-center gap-2"
-          >
-            <Icon as={MdScience} />
-            Synthesize Selector
-          </button>
-          <label className="flex items-center justify-between text-xs text-gray-600">
-            <span className="sr-only">Upload CnD layout file</span>
-            <span className="text-[11px] text-gray-500">Upload .cnd</span>
-            <input 
-              type="file" 
-              accept=".cnd" 
-              onChange={handleFileUpload}
-              className="block w-full text-[11px] text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border file:border-gray-200 file:bg-white file:text-xs file:font-medium hover:file:bg-gray-50"
-            />
-          </label>
-        </div>
-        
-        {/* CnD Layout Interface mount point */}
-        <div 
-          id="cnd-editor-mount" 
-          ref={cndEditorRef}
-          className="flex-1 min-h-[300px] mt-4"
-        />
-        
-        {!isEditorMounted && (
-          <div className="text-gray-500 text-sm mt-2">
-            Loading CnD Layout Editor...
+
+      <div className="flex-1 space-y-4 p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                Layout controls
+              </p>
+              <p className="text-sm text-slate-600">
+                Apply directives, manage projections, and regenerate the layout without leaving context.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span
+                className="inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]"
+                aria-hidden
+              />
+              <span>Live changes target the active graph</span>
+            </div>
           </div>
-        )}
+
+          <div className="space-y-3 p-4">
+            <div
+              id="layout-projection-mount"
+              ref={projectionMountRef}
+              className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2"
+            />
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={applyLayout}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-indigo-500 hover:to-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                Apply Layout
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-fuchsia-500 hover:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                <Icon as={MdScience} />
+                Synthesize Selector
+              </button>
+            </div>
+
+            <label className="group relative flex flex-col gap-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-xs text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">
+              <span className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                Upload .cnd
+              </span>
+              <span className="text-sm font-medium text-slate-800">
+                Replace directives from a saved layout file.
+              </span>
+              <span className="text-[11px] text-slate-500">
+                We apply it directly to the active graph.
+              </span>
+              <input
+                type="file"
+                accept=".cnd"
+                onChange={handleFileUpload}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label="Upload .cnd layout file"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm p-4">
+          <div className="flex flex-col gap-2 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                CnD directives
+              </p>
+              <p className="text-sm text-slate-600">
+                Edit constraints here, then run Apply Layout to push updates into the graph view.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span
+                className={`inline-flex h-2 w-2 rounded-full ${isEditorMounted ? 'bg-emerald-500' : 'bg-amber-400'} shadow-[0_0_0_4px_rgba(15,23,42,0.05)]`}
+                aria-hidden
+              />
+              <span className="text-slate-600">
+                {isEditorMounted ? 'Editor ready' : 'Mounting editor…'}
+              </span>
+            </div>
+          </div>
+
+          <div
+            id="cnd-editor-mount"
+            ref={cndEditorRef}
+            className="min-h-[360px] overflow-hidden rounded-xl border border-dashed border-slate-200 bg-slate-50/80 shadow-inner"
+          />
+
+          {!isEditorMounted && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500" aria-live="polite">
+              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-indigo-500" aria-hidden />
+              <span>Loading CnD Layout Editor…</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

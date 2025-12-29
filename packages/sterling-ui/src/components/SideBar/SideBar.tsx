@@ -17,9 +17,16 @@ const SideBarTheme = {
     flexDir: 'column',
     alignItems: 'stretch',
     fontSize: 'xs',
-    borderLeft: '1px',
-    borderColor: 'gray.300',
-    bg: 'gray.100'
+    gap: '6px',
+    px: 2,
+    py: 3,
+    borderLeft: '1px solid',
+    borderColor: 'whiteAlpha.200',
+    bg: 'rgba(11, 17, 32, 0.88)',
+    backdropFilter: 'saturate(180%) blur(12px)',
+    boxShadow: '-12px 0 30px rgba(15, 23, 42, 0.35)',
+    color: 'gray.100',
+    zIndex: 'banner'
   }
 };
 

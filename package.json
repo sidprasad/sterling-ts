@@ -1,11 +1,12 @@
 {
-  "name": "sterling-ts",
+  "name": "sterling-layout",
+  "description": "A fork of the Sterling visualizer with support for declarative layout.",
   "version": "1.0.0",
   "main": "index.js",
-  "author": "Tristan Dyer <atristandyer@gmail.com>",
+  "author": "Siddhartha Prasad",
   "license": "MIT",
   "type": "module",
-  "homepage": "https://tnelson.github.io/sterling-ts",
+  "homepage": "https://sidprasad.github.io/sterling-ts",
   "scripts": {
     "build:alloy": "npx webpack --env provider=alloy",
     "build:forge": "npx webpack --env provider=forge",

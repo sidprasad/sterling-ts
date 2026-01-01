@@ -6,7 +6,6 @@ export type CommonDrawerView = 'explorer' | 'evaluator' | 'log';
 export type GraphDrawerView =
   | CommonDrawerView
   | 'state'
-  | 'theme'
   | 'layout'
   | 'settings';
 export type TableDrawerView = CommonDrawerView | 'state' | 'settings';

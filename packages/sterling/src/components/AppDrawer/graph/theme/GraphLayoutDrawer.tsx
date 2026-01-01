@@ -219,71 +219,45 @@ const GraphLayoutDrawer = () => {
       />
 
       <div className="flex-1 space-y-4 p-4">
-        <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Layout controls
-              </p>
-              <p className="text-sm text-slate-600">
-                Apply directives, manage projections, and regenerate the layout without leaving context.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span
-                className="inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]"
-                aria-hidden
-              />
-              <span>Live changes target the active graph</span>
-            </div>
-          </div>
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-3 backdrop-blur shadow-sm">
+          <div
+            id="layout-projection-mount"
+            ref={projectionMountRef}
+            className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2"
+          />
 
-          <div className="space-y-3 p-4">
-            <div
-              id="layout-projection-mount"
-              ref={projectionMountRef}
-              className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2"
-            />
-
-            <div className={`grid gap-2 ${isSynthesisEnabled ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={`grid gap-2 ${isSynthesisEnabled ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
+            <button
+              type="button"
+              onClick={applyLayout}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:from-indigo-500 hover:to-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            >
+              Apply Layout
+            </button>
+            {isSynthesisEnabled && (
               <button
                 type="button"
-                onClick={applyLayout}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-indigo-500 hover:to-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:from-fuchsia-500 hover:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
-                Apply Layout
+                <Icon as={MdScience} />
+                Synthesize Selector
               </button>
-              {isSynthesisEnabled && (
-                <button
-                  type="button"
-                  onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-fuchsia-500 hover:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                >
-                  <Icon as={MdScience} />
-                  Synthesize Selector
-                </button>
-              )}
-            </div>
-
-            <label className="group relative flex flex-col gap-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-xs text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">
-              <span className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                Upload .cnd
-              </span>
-              <span className="text-sm font-medium text-slate-800">
-                Replace directives from a saved layout file.
-              </span>
-              <span className="text-[11px] text-slate-500">
-                We apply it directly to the active graph.
-              </span>
-              <input
-                type="file"
-                accept=".cnd"
-                onChange={handleFileUpload}
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                aria-label="Upload .cnd layout file"
-              />
-            </label>
+            )}
           </div>
+
+          <label className="group relative flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-2 text-[12px] text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">
+            <span className="text-[11px] uppercase tracking-[0.12em] text-slate-500">
+              Upload .cnd
+            </span>
+            <input
+              type="file"
+              accept=".cnd"
+              onChange={handleFileUpload}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              aria-label="Upload .cnd layout file"
+            />
+          </label>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm p-4">

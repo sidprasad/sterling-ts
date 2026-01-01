@@ -1,6 +1,5 @@
 import { PayloadAction } from '@reduxjs/toolkit';
 import { WritableDraft } from 'immer/dist/types/types-external';
-import { get, set } from 'lodash-es';
 import {
   CommonDrawerView,
   GraphDrawerView,
@@ -38,26 +37,6 @@ function commonDrawerViewChanged(
       state.scriptViewDrawer = view === state.scriptViewDrawer ? null : view;
       break;
   }
-}
-
-function graphDrawerThemeRelationToggled(
-  state: DraftState,
-  action: PayloadAction<{ datumId: string; relation: string }>
-) {
-  const { datumId, relation } = action.payload;
-  const path = ['graphDrawerThemeById', datumId, 'expandedRelations', relation];
-  const current = get(state, path);
-  set(state, path, !current);
-}
-
-function graphDrawerThemeTypeToggled(
-  state: DraftState,
-  action: PayloadAction<{ datumId: string; type: string }>
-) {
-  const { datumId, type } = action.payload;
-  const path = ['graphDrawerThemeById', datumId, 'expandedTypes', type];
-  const current = get(state, path);
-  set(state, path, !current);
 }
 
 /**
@@ -110,8 +89,6 @@ export default {
   mainViewChanged,
   commonDrawerViewChanged,
   graphDrawerViewChanged,
-  graphDrawerThemeRelationToggled,
-  graphDrawerThemeTypeToggled,
   tableDrawerViewChanged,
   scriptDrawerViewChanged,
   selectedGeneratorChanged

@@ -20,12 +20,6 @@ const GraphViewButtons = () => {
         onClick={() => dispatch(graphDrawerViewChanged('state'))}
       />
       <SideBarButton
-        text='Theme'
-        rightIcon={<RiPaletteLine />}
-        isActive={view === 'GraphView' && drawer === 'theme'}
-        onClick={() => dispatch(graphDrawerViewChanged('theme'))}
-      />
-      <SideBarButton
         text='Layout'
         rightIcon={<MdWorkspacesOutline />}
         isActive={view === 'GraphView' && drawer === 'layout'}

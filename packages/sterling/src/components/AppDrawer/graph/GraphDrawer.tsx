@@ -13,10 +13,6 @@ import {
   ExplorerDrawer,
   ExplorerDrawerHeader
 } from '../common/explorer/ExplorerDrawer';
-import {
-  GraphThemeDrawer,
-  GraphThemeDrawerHeader
-} from './theme/GraphThemeDrawer';
 import { GraphLayoutDrawer, GraphLayoutDrawerHeader } from './theme/GraphLayoutDrawer';
 
 const GraphDrawer = () => {
@@ -25,7 +21,6 @@ const GraphDrawer = () => {
     <>
       {drawer === 'explorer' && <ExplorerDrawer />}
       {drawer === 'state' && <GraphStateDrawer />}
-      {drawer === 'theme' && <GraphThemeDrawer />}
       {drawer === 'evaluator' && <EvaluatorDrawer />}
       {drawer === 'log' && <LogDrawer />}
       {drawer === 'layout' && <GraphLayoutDrawer />}
@@ -43,7 +38,6 @@ const GraphDrawerHeader = () => {
     <>
       {drawer === 'explorer' && <ExplorerDrawerHeader />}
       {drawer === 'state' && <GraphStateDrawerHeader />}
-      {drawer === 'theme' && <GraphThemeDrawerHeader />}
       {drawer === 'evaluator' && <EvaluatorDrawerHeader />}
       {drawer === 'log' && <LogDrawerHeader />}
       {drawer === 'layout' && <GraphLayoutDrawerHeader />}

@@ -7,10 +7,6 @@ import {
   selectGraphDrawerThemeRelationExpanded,
   selectGraphDrawerThemeTypeExpanded
 } from '../../../../../state/selectors';
-import {
-  graphDrawerThemeRelationToggled,
-  graphDrawerThemeTypeToggled
-} from '../../../../../state/ui/uiSlice';
 import { alloyRelationTree } from './alloyRelationTree';
 import { alloyTypeTree } from './alloyTypeTree';
 import { RelationStylePanel } from './RelationStylePanel';
@@ -37,21 +33,15 @@ const StyleSection = ({ datum }: { datum: DatumParsed<any> }) => {
   };
 
   const onTypeToggle = (node: DatumNode) => {
-    dispatch(
-      graphDrawerThemeTypeToggled({
-        type: node.id,
-        datumId: datum.id
-      })
-    );
+    // no-op: theme drawer removed
+    void node;
+    void dispatch;
   };
 
   const onRelationToggle = (node: DatumNode) => {
-    dispatch(
-      graphDrawerThemeRelationToggled({
-        relation: node.id,
-        datumId: datum.id
-      })
-    );
+    // no-op: theme drawer removed
+    void node;
+    void dispatch;
   };
 
   return (

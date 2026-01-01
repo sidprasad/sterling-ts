@@ -35,14 +35,7 @@ function selectGraphDrawerThemeRelationExpanded(
   datum: DatumParsed<any>,
   relation: string
 ): boolean {
-  return (
-    get(state, [
-      'graphDrawerThemeById',
-      datum.id,
-      'expandedRelations',
-      relation
-    ]) === true
-  );
+  return false;
 }
 
 /**
@@ -54,10 +47,7 @@ function selectGraphDrawerThemeTypeExpanded(
   datum: DatumParsed<any>,
   type: string
 ): boolean {
-  return (
-    get(state, ['graphDrawerThemeById', datum.id, 'expandedTypes', type]) ===
-    true
-  );
+  return false;
 }
 
 /**

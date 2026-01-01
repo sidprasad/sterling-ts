@@ -1,7 +1,7 @@
 import { PaneTitle } from '@/sterling-ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec, selectIsSynthesisActive } from '../../../../state/selectors';
+import { selectActiveDatum, selectCnDSpec, selectIsSynthesisActive, selectIsSynthesisEnabled } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
 import { enterSynthesisMode } from '../../../../state/synthesis/synthesisSlice';
 import { RiHammerFill } from 'react-icons/ri';
@@ -43,6 +43,7 @@ const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
+  const isSynthesisEnabled = useSterlingSelector(selectIsSynthesisEnabled);
   const cndEditorRef = useRef<HTMLDivElement>(null);
   const errorMountRef = useRef<HTMLDivElement>(null);
   const projectionMountRef = useRef<HTMLDivElement>(null);
@@ -198,7 +199,7 @@ const GraphLayoutDrawer = () => {
   };
   
   // If synthesis mode is active, show synthesis panel instead
-  if (isSynthesisActive) {
+  if (isSynthesisActive && isSynthesisEnabled) {
     return <SynthesisModePanel />;
   }
   
@@ -244,7 +245,7 @@ const GraphLayoutDrawer = () => {
               className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2"
             />
 
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className={`grid gap-2 ${isSynthesisEnabled ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
               <button
                 type="button"
                 onClick={applyLayout}
@@ -252,14 +253,16 @@ const GraphLayoutDrawer = () => {
               >
                 Apply Layout
               </button>
-              <button
-                type="button"
-                onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-fuchsia-500 hover:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              >
-                <Icon as={MdScience} />
-                Synthesize Selector
-              </button>
+              {isSynthesisEnabled && (
+                <button
+                  type="button"
+                  onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-fuchsia-500 hover:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                >
+                  <Icon as={MdScience} />
+                  Synthesize Selector
+                </button>
+              )}
             </div>
 
             <label className="group relative flex flex-col gap-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-xs text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">

@@ -33,6 +33,26 @@ Go to `Manual Datum` near the bottom of the screen and paste in Alloy-style inst
 
 
 
+
+### Feature flags (provider-driven)
+
+Sterling can hide/show UI features based on capabilities advertised by the provider. The provider may include an optional `features: string[]` field in the meta payload it sends at startup. Example:
+
+```json
+{
+  "type": "meta",
+  "version": 1,
+  "payload": {
+    "name": "my-provider",
+    "views": ["graph", "table", "script"],
+    "generators": ["run", "check"],
+    "features": ["synthesis"]
+  }
+}
+```
+
+- Selector synthesis in the Graph drawer is hidden unless the provider includes "synthesis" in `features`.
+
 ## How to build
 
 To build:

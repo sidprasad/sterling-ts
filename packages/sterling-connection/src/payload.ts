@@ -94,4 +94,9 @@ export interface ProviderMeta {
    * Alloy and Forge, this would be the "menu" of run, check, etc. commands.
    */
   generators?: string[];
+  /**
+   * Optional feature flags exposed by the provider. Use this to toggle
+   * experimental UI affordances.
+   */
+  features?: string[];
 }

@@ -104,6 +104,13 @@ export function selectDatumById(
 }
 
 /**
+ * Select provider-advertised feature flags.
+ */
+export function selectProviderFeatures(state: SterlingState): string[] {
+  return providerSelectors.selectProviderFeatures(state.provider);
+}
+
+/**
  * Select whether a datum is natively stateful, meaning it is a trace.
  */
 export function selectDatumIsStateful(
@@ -664,8 +671,12 @@ export function selectCnDSpec(
 /**
  * Synthesis mode selectors
  */
+export function selectIsSynthesisEnabled(state: SterlingState): boolean {
+  return providerSelectors.selectHasFeature(state.provider, 'synthesis');
+}
+
 export function selectIsSynthesisActive(state: SterlingState): boolean {
-  return state.synthesis.isActive;
+  return selectIsSynthesisEnabled(state) && state.synthesis.isActive;
 }
 
 export function selectSynthesisSelectorType(state: SterlingState) {

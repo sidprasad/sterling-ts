@@ -168,34 +168,6 @@ export function selectGraphDrawer(
 }
 
 /**
- * Select whether a relation style is expanded in the graph drawer view associated
- * with a datum.
- */
-export function selectGraphDrawerThemeRelationExpanded(
-  state: SterlingState,
-  datum: DatumParsed<any>,
-  relation: string
-): boolean {
-  return uiSelectors.selectGraphDrawerThemeRelationExpanded(
-    state.ui,
-    datum,
-    relation
-  );
-}
-
-/**
- * Select whether a type style is expanded in the graph drawer view associated
- * with a datum.
- */
-export function selectGraphDrawerThemeTypeExpanded(
-  state: SterlingState,
-  datum: DatumParsed<any>,
-  type: string
-): boolean {
-  return uiSelectors.selectGraphDrawerThemeTypeExpanded(state.ui, datum, type);
-}
-
-/**
  * Select the graph layout associated with a datum.
  */
 export function selectGraphLayout(

@@ -1,5 +1,4 @@
 import { PayloadAction } from '@reduxjs/toolkit';
-import { WritableDraft } from 'immer/dist/types/types-external';
 import {
   CommonDrawerView,
   GraphDrawerView,
@@ -8,8 +7,6 @@ import {
   TableDrawerView,
   UiState
 } from './ui';
-
-type DraftState = WritableDraft<UiState>;
 
 /**
  * Set the main UI view (graph/table/script)
@@ -43,7 +40,7 @@ function commonDrawerViewChanged(
  * Display a graph drawer view or hide the drawer.
  */
 function graphDrawerViewChanged(
-  state: WritableDraft<UiState>,
+  state: UiState,
   action: PayloadAction<GraphDrawerView>
 ) {
   const view = action.payload;

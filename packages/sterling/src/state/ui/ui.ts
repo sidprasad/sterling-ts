@@ -24,14 +24,6 @@ export interface UiState {
   scriptViewDrawer: ScriptDrawerView | null;
 
   // the graph view drawer states
-  graphDrawerThemeById: Record<
-    string,
-    {
-      expandedTypes: Record<string, boolean>;
-      expandedRelations: Record<string, boolean>;
-    }
-  >;
-
   // The generator name selected in the explorer dropdown
   selectedGenerator: string | undefined;
 }
@@ -46,7 +38,6 @@ export const newUiState = (initialView?: MainView): UiState => {
     graphViewDrawer: 'explorer',
     tableViewDrawer: null,
     scriptViewDrawer: 'variables',
-    graphDrawerThemeById: {},
     selectedGenerator: undefined
   };
 };

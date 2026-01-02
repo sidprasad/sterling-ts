@@ -1,6 +1,4 @@
-import { DatumParsed } from '@/sterling-connection';
 import { createSelector } from '@reduxjs/toolkit';
-import { get } from 'lodash-es';
 import {
   GraphDrawerView,
   MainView,
@@ -28,26 +26,6 @@ function selectMainView(state: UiState): MainView {
  */
 function selectGraphDrawer(state: UiState): GraphDrawerView | null {
   return state.graphViewDrawer;
-}
-
-function selectGraphDrawerThemeRelationExpanded(
-  state: UiState,
-  datum: DatumParsed<any>,
-  relation: string
-): boolean {
-  return false;
-}
-
-/**
- * Select whether a type style is expanded in the graph drawer view associated
- * with a datum.
- */
-function selectGraphDrawerThemeTypeExpanded(
-  state: UiState,
-  datum: DatumParsed<any>,
-  type: string
-): boolean {
-  return false;
 }
 
 /**
@@ -114,8 +92,6 @@ export default {
   selectAvailableViews,
   selectMainView,
   selectGraphDrawer,
-  selectGraphDrawerThemeRelationExpanded,
-  selectGraphDrawerThemeTypeExpanded,
   selectTableDrawer,
   selectScriptDrawer,
   selectDrawerIsCollapsed,

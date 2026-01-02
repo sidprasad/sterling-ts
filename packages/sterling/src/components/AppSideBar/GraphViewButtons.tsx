@@ -2,7 +2,6 @@ import { SideBarButton } from '@/sterling-ui';
 import { FaFilm } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { MdWorkspacesOutline } from 'react-icons/md';
-import { RiPaletteLine } from 'react-icons/ri';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { selectGraphDrawer, selectMainView } from '../../state/selectors';
 import { graphDrawerViewChanged } from '../../state/ui/uiSlice';

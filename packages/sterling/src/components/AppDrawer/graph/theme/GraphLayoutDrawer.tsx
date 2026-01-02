@@ -248,7 +248,7 @@ const GraphLayoutDrawer = () => {
 
           <label className="group relative flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-2 text-[12px] text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">
             <span className="text-[11px] uppercase tracking-[0.12em] text-slate-500">
-              Upload .cnd
+              Upload .cnd file here
             </span>
             <input
               type="file"
@@ -262,14 +262,6 @@ const GraphLayoutDrawer = () => {
 
         <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm p-4">
           <div className="flex flex-col gap-2 pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                CnD directives
-              </p>
-              <p className="text-sm text-slate-600">
-                Edit constraints here, then run Apply Layout to push updates into the graph view.
-              </p>
-            </div>
             <div className="flex items-center gap-2 text-xs">
               <span
                 className={`inline-flex h-2 w-2 rounded-full ${isEditorMounted ? 'bg-emerald-500' : 'bg-amber-400'} shadow-[0_0_0_4px_rgba(15,23,42,0.05)]`}

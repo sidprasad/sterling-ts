@@ -87,15 +87,15 @@ export const SynthesisExampleStep = () => {
     );
   }
 
-  constEnsure we have the current data instance
+  const handleNext = () => {
+    // Ensure we have the current data instance
     if (!currentDataInstance) {
       console.error('[SynthesisExample] No data instance available');
       return;
     }
     
     // Commit draft to examples with data instance
-    dispatch(commitDraftSelection({ instanceIndex, dataInstance: currentDataInstance
-    dispatch(commitDraftSelection({ instanceIndex }));
+    dispatch(commitDraftSelection({ instanceIndex, dataInstance: currentDataInstance }));
     
     // Request next instance from Forge if not the last one
     if (currentStep < numInstances && datum?.generatorName) {

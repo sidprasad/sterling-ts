@@ -173,21 +173,23 @@ function updateDraftSelection(
  */
 function commitDraftSelection(
   state: DraftState,
-  action: { payload: { instanceIndex: number } }
+  action: { payload: { instanceIndex: number; dataInstance: any } }
 ) {
-  const { instanceIndex } = action.payload;
+  const { instanceIndex, dataInstance } = action.payload;
   const existingIndex = state.examples.findIndex(ex => ex.instanceIndex === instanceIndex);
   
   if (existingIndex >= 0) {
     // Update existing example
     state.examples[existingIndex].selectedAtomIds = state.draftSelection.atomIds;
     state.examples[existingIndex].selectedPairs = state.draftSelection.pairs;
+    state.examples[existingIndex].dataInstance = dataInstance;
   } else {
     // Add new example
     state.examples.push({
       instanceIndex,
       selectedAtomIds: [...state.draftSelection.atomIds],
-      selectedPairs: [...state.draftSelection.pairs]
+      selectedPairs: [...state.draftSelection.pairs],
+      dataInstance
     });
   }
   
@@ -196,6 +198,16 @@ function commitDraftSelection(
   if (state.currentStep <= state.numInstances) {
     state.currentStep++;
   }
+}
+
+/**
+ * Set the current AlloyDataInstance (called when graph renders)
+ */
+function setCurrentDataInstance(
+  state: DraftState,
+  action: { payload: { dataInstance: any } }
+) {
+  state.currentDataInstance = action.payload.dataInstance;
 }
 
 export default {
@@ -210,5 +222,6 @@ export default {
   setSynthesisError,
   startSynthesis,
   updateDraftSelection,
-  commitDraftSelection
+  commitDraftSelection,
+  setCurrentDataInstance
 };

@@ -698,3 +698,7 @@ export function selectSynthesisDraftAtomIds(state: SterlingState): string[] {
 export function selectSynthesisDraftPairs(state: SterlingState): [string, string][] {
   return state.synthesis.draftSelection.pairs;
 }
+
+export function selectSynthesisCurrentDataInstance(state: SterlingState): any | null {
+  return state.synthesis.currentDataInstance;
+}

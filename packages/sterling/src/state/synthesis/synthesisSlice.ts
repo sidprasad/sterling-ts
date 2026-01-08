@@ -23,7 +23,8 @@ export const {
   setSynthesisError,
   startSynthesis,
   updateDraftSelection,
-  commitDraftSelection
+  commitDraftSelection,
+  setCurrentDataInstance
 } = synthesisSlice.actions;
 
 export default synthesisSlice.reducer;

@@ -6,7 +6,8 @@ import {
   selectSynthesisInstances,
   selectSynthesisStep,
   selectSynthesisNumInstances,
-  selectActiveDatum
+  selectActiveDatum,
+  selectSynthesisCurrentDataInstance
 } from '../../../../state/selectors';
 import { commitDraftSelection } from '../../../../state/synthesis/synthesisSlice';
 import { buttonClicked } from '@/sterling-connection';
@@ -22,6 +23,7 @@ export const SynthesisExampleStep = () => {
   const instances = useSterlingSelector(selectSynthesisInstances);
   const numInstances = useSterlingSelector(selectSynthesisNumInstances);
   const datum = useSterlingSelector(selectActiveDatum);
+  const currentDataInstance = useSterlingSelector(selectSynthesisCurrentDataInstance);
   const [inputText, setInputText] = useState<string>('');
   const [selectedAtomIds, setSelectedAtomIds] = useState<string[]>([]);
 
@@ -85,8 +87,14 @@ export const SynthesisExampleStep = () => {
     );
   }
 
-  const handleNext = () => {
-    // Commit draft to examples
+  constEnsure we have the current data instance
+    if (!currentDataInstance) {
+      console.error('[SynthesisExample] No data instance available');
+      return;
+    }
+    
+    // Commit draft to examples with data instance
+    dispatch(commitDraftSelection({ instanceIndex, dataInstance: currentDataInstance
     dispatch(commitDraftSelection({ instanceIndex }));
     
     // Request next instance from Forge if not the last one

@@ -6,11 +6,9 @@ import {
   selectCnDSpec, 
   selectTimeIndex,
   selectIsSynthesisActive,
-  selectSynthesisStep,
-  selectSynthesisDraftAtomIds,
-  selectSynthesisDraftPairs,
-  selectSynthesisSelectorType
+  selectSynthesisStep
 } from '../../state/selectors';
+import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
 
@@ -41,6 +39,13 @@ const GraphView = () => {
     nodePositionsRef.current = positions;
   }, []);
 
+  // Callback to receive the AlloyDataInstance for synthesis
+  const handleDataInstanceCreated = useCallback((dataInstance: any) => {
+    if (isSynthesisActive) {
+      dispatch(setCurrentDataInstance({ dataInstance }));
+    }
+  }, [dispatch, isSynthesisActive]);
+
   return (
     <Pane className='grid grid-flow-col divide-x divide-dashed'>
       {datum ? (
@@ -57,6 +62,7 @@ const GraphView = () => {
                 priorPositions={nodePositionsRef.current}
                 onNodePositionsChange={handleNodePositionsChange}
                 synthesisMode={isSynthesisActive && currentStep > 0}
+                onDataInstanceCreated={handleDataInstanceCreated}
               />
             </PaneBody>
           </Pane>

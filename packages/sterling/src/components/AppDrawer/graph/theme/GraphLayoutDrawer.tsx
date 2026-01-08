@@ -43,7 +43,6 @@ const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
   const datum = useSterlingSelector(selectActiveDatum);
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
-  const isSynthesisEnabled = useSterlingSelector(selectIsSynthesisEnabled);
   const cndEditorRef = useRef<HTMLDivElement>(null);
   const errorMountRef = useRef<HTMLDivElement>(null);
   const projectionMountRef = useRef<HTMLDivElement>(null);
@@ -118,7 +117,7 @@ const GraphLayoutDrawer = () => {
 
   // Mount projection controls - remount when datum changes to get fresh projection data
   useEffect(() => {
-    if (projectionMountRef.current && window.mountProjectionControls && datum && !isSynthesisActive) {
+    if (projectionMountRef.current && window.mountProjectionControls && datum) {
       try {
         window.mountProjectionControls('layout-projection-mount', handleProjectionChange);
         setIsProjectionMounted(true);
@@ -136,7 +135,7 @@ const GraphLayoutDrawer = () => {
   // Mount the CnD Layout Interface from SpyTial
   useEffect(() => {
     // Mount the CnD editor with preloaded spec (if available) or default directives
-    if (cndEditorRef.current && !isEditorMounted && datum && !isSynthesisActive) {
+    if (cndEditorRef.current && !isEditorMounted && datum) {
       // Use preloaded spec if available, otherwise use default directive
       const defaultSpec = 'directives:\n  - flag: hideDisconnectedBuiltIns';
       const initialSpec = (preloadedSpec && preloadedSpec !== '') ? preloadedSpec : defaultSpec;
@@ -162,7 +161,7 @@ const GraphLayoutDrawer = () => {
         console.error('Failed to mount CnD Layout Interface:', err);
       }
     }
-  }, [isEditorMounted, datum, isSynthesisActive, preloadedSpec]);
+  }, [isEditorMounted, datum, preloadedSpec]);
 
   const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -199,7 +198,7 @@ const GraphLayoutDrawer = () => {
   };
   
   // If synthesis mode is active, show synthesis panel instead
-  if (isSynthesisActive && isSynthesisEnabled) {
+  if (isSynthesisActive) {
     return <SynthesisModePanel />;
   }
   
@@ -226,7 +225,7 @@ const GraphLayoutDrawer = () => {
             className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2"
           />
 
-          <div className={`grid gap-2 ${isSynthesisEnabled ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
+          <div className="grid gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={applyLayout}
@@ -234,16 +233,14 @@ const GraphLayoutDrawer = () => {
             >
               Apply Layout
             </button>
-            {isSynthesisEnabled && (
-              <button
-                type="button"
-                onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
+            <button
+              type="button"
+              onClick={() => dispatch(enterSynthesisMode({ numInstances: 3, selectorType: 'unary' }))}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:from-fuchsia-500 hover:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 <Icon as={MdScience} />
                 Synthesize Selector
               </button>
-            )}
           </div>
 
           <label className="group relative flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-2 text-[12px] text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">

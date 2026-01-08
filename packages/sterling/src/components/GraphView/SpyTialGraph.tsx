@@ -73,6 +73,10 @@ declare global {
       getNodePositions?: () => NodePositions;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
+      // Node highlighting for synthesis mode
+      clearNodeHighlights?: () => void;
+      highlightNodes?: (nodeIds: string[], color?: string) => boolean;
+      highlightNodePairs?: (pairs: [string, string][], options?: { showBadges?: boolean }) => boolean;
     };
   }
 }
@@ -98,6 +102,12 @@ interface SpyTialGraphProps {
   synthesisSelectedAtoms?: string[];
   /** Callback when atom is clicked in synthesis mode */
   onSynthesisAtomClick?: (atomId: string) => void;
+  /** Node pairs to highlight for binary synthesis */
+  synthesisHighlightPairs?: [string, string][];
+  /** Show 1/2 badges on highlighted pairs */
+  synthesisShowBadges?: boolean;
+  /** Custom highlight color for synthesis results */
+  synthesisHighlightColor?: string;
 }
 
 const SpyTialGraph = (props: SpyTialGraphProps) => {
@@ -109,7 +119,10 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     onNodePositionsChange,
     synthesisMode = false,
     synthesisSelectedAtoms = [],
-    onSynthesisAtomClick
+    onSynthesisAtomClick,
+    synthesisHighlightPairs = [],
+    synthesisShowBadges = false,
+    synthesisHighlightColor
   } = props;
   // Separate ref for the graph container - this div is NOT managed by React's children
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -441,6 +454,56 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       loadGraph();
     }
   }, [datum.data, cndSpec, timeIndex, loadGraph, isCndCoreReady]);
+
+  // Update node highlighting when synthesis selections change
+  useEffect(() => {
+    if (!graphElementRef.current || !isCndCoreReady) {
+      console.log('[SpyTialGraph] Cannot highlight - graph not ready:', { hasElement: !!graphElementRef.current, isCndCoreReady });
+      return;
+    }
+
+    console.log('[SpyTialGraph] Highlighting effect - synthesisMode:', synthesisMode, 'selectedAtoms:', synthesisSelectedAtoms, 'pairs:', synthesisHighlightPairs);
+
+    // Clear previous highlights first
+    if (graphElementRef.current.clearNodeHighlights) {
+      console.log('[SpyTialGraph] Clearing previous highlights');
+      graphElementRef.current.clearNodeHighlights();
+    } else {
+      console.warn('[SpyTialGraph] clearNodeHighlights method not available');
+    }
+
+    // Only apply new highlights if in synthesis mode
+    if (!synthesisMode) {
+      console.log('[SpyTialGraph] Not in synthesis mode, skipping highlights');
+      return;
+    }
+
+    // Highlight based on mode (unary vs binary)
+    if (synthesisHighlightPairs.length > 0) {
+      // Binary mode: highlight pairs
+      console.log('[SpyTialGraph] Highlighting pairs:', synthesisHighlightPairs);
+      if (graphElementRef.current.highlightNodePairs) {
+        const success = graphElementRef.current.highlightNodePairs(synthesisHighlightPairs, {
+          showBadges: synthesisShowBadges
+        });
+        console.log('[SpyTialGraph] highlightNodePairs result:', success);
+      } else {
+        console.warn('[SpyTialGraph] highlightNodePairs method not available on graph element');
+      }
+    } else if (synthesisSelectedAtoms.length > 0) {
+      // Unary mode: highlight individual nodes
+      console.log('[SpyTialGraph] Highlighting nodes:', synthesisSelectedAtoms, 'color:', synthesisHighlightColor);
+      if (graphElementRef.current.highlightNodes) {
+        const success = graphElementRef.current.highlightNodes(
+          synthesisSelectedAtoms,
+          synthesisHighlightColor
+        );
+        console.log('[SpyTialGraph] highlightNodes result:', success);
+      } else {
+        console.warn('[SpyTialGraph] highlightNodes method not available on graph element');
+      }
+    }
+  }, [synthesisMode, synthesisSelectedAtoms, synthesisHighlightPairs, synthesisShowBadges, synthesisHighlightColor, isCndCoreReady]);
 
   return (
     <div 

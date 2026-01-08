@@ -1,6 +1,6 @@
-import { Badge, Box, Button, Text, VStack, HStack } from '@chakra-ui/react';
+import { Badge, Button, Input, Text, VStack, HStack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { MdArrowForward } from 'react-icons/md';
+import { MdArrowForward, MdClose } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import {
   selectSynthesisExamples,
@@ -9,11 +9,12 @@ import {
   selectSynthesisNumInstances,
   selectActiveDatum
 } from '../../../../state/selectors';
-import { addSynthesisExample, updateSynthesisExample } from '../../../../state/synthesis/synthesisSlice';
+import { commitDraftSelection } from '../../../../state/synthesis/synthesisSlice';
 import { buttonClicked } from '@/sterling-connection';
 
 /**
- * Binary example collection - user selects pairs of atoms
+ * Binary example collection - user enters pairs in text input
+ * Pairs are highlighted in the graph as they type
  */
 export const BinaryExampleStep = () => {
   const dispatch = useSterlingDispatch();
@@ -22,22 +23,85 @@ export const BinaryExampleStep = () => {
   const instances = useSterlingSelector(selectSynthesisInstances);
   const numInstances = useSterlingSelector(selectSynthesisNumInstances);
   const datum = useSterlingSelector(selectActiveDatum);
+  const [inputText, setInputText] = useState<string>('');
   const [selectedPairs, setSelectedPairs] = useState<[string, string][]>([]);
-  const [selectedFirst, setSelectedFirst] = useState<string | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   const instanceIndex = currentStep - 1;
   const instance = instances[instanceIndex];
-  const currentExample = examples.find((ex) => ex.instanceIndex === instanceIndex);
+  const currentExample = examples.find((ex: any) => ex.instanceIndex === instanceIndex);
 
-  // Initialize selected pairs from existing example if present
+  // Initialize from existing example if present, otherwise clear
   useEffect(() => {
     if (currentExample) {
       setSelectedPairs(currentExample.selectedPairs);
+      const text = currentExample.selectedPairs
+        .map(([a, b]: [string, string]) => `${a}:${b}`)
+        .join(', ');
+      setInputText(text);
     } else {
       setSelectedPairs([]);
+      setInputText('');
+      // Clear any existing highlights
+      const graphEl = document.querySelector('webcola-cnd-graph');
+      if (graphEl && (graphEl as any).clearNodeHighlights) {
+        (graphEl as any).clearNodeHighlights();
+      }
     }
-    setSelectedFirst(null);
   }, [instanceIndex, currentExample]);
+
+  // Parse input text but don't update draft until blur
+  useEffect(() => {
+    setParseError(null);
+    
+    if (inputText.trim() === '') {
+      setSelectedPairs([]);
+      return;
+    }
+
+    const pairStrings = inputText.split(',').map(p => p.trim()).filter(p => p);
+    const pairs: [string, string][] = [];
+    
+    for (const pairStr of pairStrings) {
+      const parts = pairStr.split(':');
+      
+      if (parts.length !== 2) {
+        setParseError(`Invalid pair format: "${pairStr}". Use format: First:Second`);
+        return;
+      }
+      
+      const [first, second] = parts.map(id => id.trim());
+      
+      if (!first || !second) {
+        setParseError(`Empty node ID in pair: "${pairStr}"`);
+        return;
+      }
+      
+      pairs.push([first, second]);
+    }
+    
+    setSelectedPairs(pairs);
+  }, [inputText]);
+  
+  // Highlight node pairs when input loses focus
+  const handleBlur = () => {
+    const graphEl = document.querySelector('webcola-cnd-graph');
+    if (!graphEl) {
+      console.warn('[BinaryExample] Graph element not found');
+      return;
+    }
+    
+    // Clear previous highlights
+    if ((graphEl as any).clearNodeHighlights) {
+      (graphEl as any).clearNodeHighlights();
+    }
+    
+    // Highlight the selected pairs if no parse error
+    if (selectedPairs.length > 0 && !parseError && (graphEl as any).highlightNodePairs) {
+      const success = (graphEl as any).highlightNodePairs(selectedPairs, { showBadges: true });
+      console.log('[BinaryExample] Highlighted pairs:', selectedPairs, 'success:', success);
+    }
+  };
 
   // Early return after all hooks
   if (!instance) {
@@ -48,203 +112,125 @@ export const BinaryExampleStep = () => {
     );
   }
 
-  const atoms = instance.getAtoms ? instance.getAtoms() : [];
-
-  const handleAtomClick = (atomId: string) => {
-    if (selectedFirst === null) {
-      // First atom of pair
-      setSelectedFirst(atomId);
-    } else if (selectedFirst === atomId) {
-      // Clicked same atom, deselect
-      setSelectedFirst(null);
-    } else {
-      // Second atom of pair - create the pair
-      const newPair: [string, string] = [selectedFirst, atomId];
-      setSelectedPairs((prev) => {
-        // Check if this pair already exists (in either direction)
-        const exists = prev.some(
-          ([a, b]) =>
-            (a === newPair[0] && b === newPair[1]) || (a === newPair[1] && b === newPair[0])
-        );
-        if (exists) {
-          // Remove it
-          return prev.filter(
-            ([a, b]) =>
-              !(
-                (a === newPair[0] && b === newPair[1]) ||
-                (a === newPair[1] && b === newPair[0])
-              )
-          );
-        } else {
-          // Add it
-          return [...prev, newPair];
-        }
-      });
-      setSelectedFirst(null);
+  const handleNext = () => {
+    // Commit draft to examples
+    dispatch(commitDraftSelection({ instanceIndex }));
+    
+    // Request next instance from Forge if not the last one
+    if (currentStep < numInstances && datum?.generatorName) {
+      console.log('[BinaryExample] Requesting next instance from Forge');
+      dispatch(buttonClicked({
+        id: undefined,
+        onClick: "next",
+        context: { generatorName: datum.generatorName }
+      }));
     }
   };
 
-  const handleRemovePair = (pair: [string, string]) => {
-    setSelectedPairs((prev) =>
-      prev.filter(([a, b]) => !(a === pair[0] && b === pair[1]))
-    );
-  };
-
-  const handleConfirm = () => {
-    if (currentExample) {
-      dispatch(
-        updateSynthesisExample({
-          instanceIndex,
-          selectedPairs
-        })
-      );
-    } else {
-      dispatch(
-        addSynthesisExample({
-          instanceIndex,
-          selectedAtomIds: [], // Empty for binary
-          selectedPairs
-        })
-      );
-      
-      // If not the last instance, request next from Forge
-      if (currentStep < numInstances && datum?.generatorName) {
-        console.log('[BinaryExample] Requesting next instance from Forge');
-        dispatch(buttonClicked({
-          id: undefined,
-          onClick: "next",
-          context: { generatorName: datum.generatorName }
-        }));
-      }
-    }
-  };
-
-  const isPairSelected = (atomId: string) => {
-    return selectedPairs.some(([a, b]) => a === atomId || b === atomId);
+  const handleRemovePair = (pairIndex: number) => {
+    const newPairs = selectedPairs.filter((_, idx) => idx !== pairIndex);
+    const newText = newPairs.map(([a, b]) => `${a}:${b}`).join(', ');
+    setInputText(newText);
   };
 
   return (
     <div className="flex flex-col h-full">
       {/* Instructions */}
-      <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-          Instance {instanceIndex + 1} - Select Pairs of Atoms
+      <div className="p-4 bg-purple-50 border-b border-purple-200">
+        <Text fontSize="sm" fontWeight="semibold" mb={1} color="purple.900">
+          Instance {instanceIndex + 1} of {numInstances} - Binary Selector
         </Text>
-        <Text fontSize="xs" color="gray.700">
-          {selectedFirst ? (
-            <>
-              First atom: <Badge colorScheme="blue">{selectedFirst}</Badge> - Now select second
-              atom
-            </>
-          ) : (
-            <>Click first atom of pair. Selected pairs: {selectedPairs.length}</>
-          )}
+        <Text fontSize="xs" color="purple.700">
+          Enter pairs of atom IDs (format: First:Second) separated by commas.
+          <br/>
+          Pairs will be highlighted with arrows in the graph.
         </Text>
       </div>
 
-      {/* Selected pairs list */}
-      {selectedPairs.length > 0 && (
-        <div className="p-4 bg-blue-50 border-b">
-          <Text fontSize="sm" fontWeight="semibold" mb={2}>
-            Selected Pairs:
-          </Text>
-          <VStack spacing={2} align="stretch">
-            {selectedPairs.map(([a, b], idx) => (
-              <HStack
-                key={idx}
-                p={2}
-                bg="white"
-                rounded="md"
-                borderWidth={1}
-                borderColor="blue.300"
-                justify="space-between"
-              >
-                <HStack>
-                  <Badge colorScheme="blue">{a}</Badge>
-                  <MdArrowForward />
-                  <Badge colorScheme="blue">{b}</Badge>
-                </HStack>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  colorScheme="red"
-                  onClick={() => handleRemovePair([a, b])}
-                >
-                  Remove
-                </Button>
-              </HStack>
-            ))}
-          </VStack>
-        </div>
-      )}
-
-      {/* Atom list for selection */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <VStack spacing={2} align="stretch">
-          {atoms.length === 0 && (
-            <Text color="gray.500" textAlign="center">
-              No atoms available
+      {/* Text input for pairs */}
+      <div className="p-4 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Node Pairs (format: First:Second, comma-separated)
+          </label>
+          <Input
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="e.g., Alice:Bob, Charlie:Diana"
+            size="lg"
+            fontFamily="monospace"
+            isInvalid={parseError !== null}
+          />
+          {parseError ? (
+            <Text fontSize="xs" color="red.600" mt={1}>
+              {parseError}
+            </Text>
+          ) : (
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              Example: Node0:Node1, Node2:Node3
             </Text>
           )}
-          {atoms.map((atom: any) => {
-            const isFirstSelected = selectedFirst === atom.id;
-            const isInPair = isPairSelected(atom.id);
-            return (
-              <Box
-                key={atom.id}
-                p={3}
-                borderWidth={2}
-                borderColor={
-                  isFirstSelected ? 'purple.500' : isInPair ? 'blue.300' : 'gray.200'
-                }
-                bg={isFirstSelected ? 'purple.50' : isInPair ? 'blue.50' : 'white'}
-                rounded="md"
-                cursor="pointer"
-                onClick={() => handleAtomClick(atom.id)}
-                _hover={{
-                  borderColor: isFirstSelected ? 'purple.600' : isInPair ? 'blue.400' : 'gray.300'
-                }}
-                transition="all 0.2s"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Text fontWeight="semibold">{atom.id}</Text>
-                    {atom.types && atom.types.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {atom.types.map((type: string) => (
-                          <Badge key={type} size="sm" colorScheme="gray">
-                            {type}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {isFirstSelected && (
-                    <Badge colorScheme="purple" fontSize="xs">
-                      First in pair
+        </div>
+
+        {/* Show parsed pairs */}
+        {selectedPairs.length > 0 && !parseError && (
+          <div>
+            <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={2}>
+              {selectedPairs.length} pair{selectedPairs.length !== 1 ? 's' : ''} will be highlighted:
+            </Text>
+            <VStack spacing={2} align="stretch">
+              {selectedPairs.map(([a, b], idx) => (
+                <HStack
+                  key={idx}
+                  p={2}
+                  bg="white"
+                  rounded="md"
+                  borderWidth={1}
+                  borderColor="purple.300"
+                  justify="space-between"
+                >
+                  <HStack spacing={2}>
+                    <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>
+                      {a}
                     </Badge>
-                  )}
-                  {isInPair && !isFirstSelected && (
-                    <Badge colorScheme="blue" fontSize="xs">
-                      In pair
+                    <MdArrowForward color="#805AD5" />
+                    <Badge colorScheme="red" fontSize="sm" px={2} py={1}>
+                      {b}
                     </Badge>
-                  )}
-                </div>
-              </Box>
-            );
-          })}
-        </VStack>
+                  </HStack>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    colorScheme="gray"
+                    onClick={() => handleRemovePair(idx)}
+                  >
+                    <MdClose />
+                  </Button>
+                </HStack>
+              ))}
+            </VStack>
+          </div>
+        )}
       </div>
 
-      {/* Confirm button */}
+      {/* Spacer */}
+      <div className="flex-1"></div>
+
+      {/* Next button */}
       <div className="p-4 border-t bg-gray-50">
         <Button
           w="full"
-          colorScheme="blue"
-          onClick={handleConfirm}
-          isDisabled={selectedPairs.length === 0}
+          colorScheme="purple"
+          size="lg"
+          onClick={handleNext}
+          isDisabled={selectedPairs.length === 0 || parseError !== null}
         >
-          Confirm Selection ({selectedPairs.length} pairs)
+          {currentStep < numInstances ? (
+            <>Next Instance →</>
+          ) : (
+            <>Synthesize Selector</>
+          )}
         </Button>
       </div>
     </div>

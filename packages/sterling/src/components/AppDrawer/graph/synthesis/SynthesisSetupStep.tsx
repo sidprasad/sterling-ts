@@ -69,11 +69,6 @@ export const SynthesisSetupStep = () => {
           <Text fontSize="2xl" fontWeight="bold" mb={2}>
             Selector Synthesis
           </Text>
-          <Text color="gray.600">
-            Automatically generate selector expressions from examples. Select atoms or pairs
-            across multiple instances, and the synthesizer will find a selector that matches
-            your pattern.
-          </Text>
         </div>
 
         <FormControl>
@@ -81,32 +76,13 @@ export const SynthesisSetupStep = () => {
           <RadioGroup value={selectorType} onChange={(val) => setSelectorType(val as SelectorType)}>
             <Stack direction="column" spacing={3}>
               <Radio value="unary">
-                <div>
-                  <Text fontWeight="semibold">Unary Selector (Atoms)</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    Select individual atoms. Use for: alignment, colors, sizes, groups
-                  </Text>
-                  <Text fontSize="xs" color="gray.500" fontFamily="mono" mt={1}>
-                    Example: Student & Adult
-                  </Text>
-                </div>
+                <Text fontWeight="semibold">Unary Selector (Atoms)</Text>
               </Radio>
               <Radio value="binary">
-                <div>
-                  <Text fontWeight="semibold">Binary Selector (Pairs/Relations)</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    Select pairs of atoms. Use for: orientation constraints, edge styling
-                  </Text>
-                  <Text fontSize="xs" color="gray.500" fontFamily="mono" mt={1}>
-                    Example: friend | coworker
-                  </Text>
-                </div>
+                <Text fontWeight="semibold">Binary Selector (Pairs/Relations)</Text>
               </Radio>
             </Stack>
           </RadioGroup>
-          <FormHelperText>
-            Choose based on what you want to constrain or style.
-          </FormHelperText>
         </FormControl>
 
         <FormControl>
@@ -124,26 +100,7 @@ export const SynthesisSetupStep = () => {
               <NumberDecrementStepper />
             </NumberInputStepper>
           </NumberInput>
-          <FormHelperText>
-            How many instances to analyze? More instances = better generalization.
-            New instances will be fetched from Forge/Alloy as needed.
-          </FormHelperText>
         </FormControl>
-
-        <div className="bg-blue-50 border border-blue-200 rounded p-4">
-          <Text fontSize="sm" fontWeight="semibold" mb={2}>
-            How it works:
-          </Text>
-          <ol className="list-decimal list-inside text-sm space-y-1 text-gray-700">
-            <li>
-              Select {selectorType === 'unary' ? 'atoms' : 'pairs of atoms'} in each instance
-              that should match the selector
-            </li>
-            <li>After collecting all examples, synthesis will find a matching expression</li>
-            <li>Review the generated selector and see what it matches</li>
-            <li>Accept to insert it into your CnD specification</li>
-          </ol>
-        </div>
 
         <Button
           colorScheme="blue"

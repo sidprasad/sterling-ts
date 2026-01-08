@@ -43,7 +43,10 @@ function synthesisInstancesLoaded(
 ) {
   state.loadedInstances = action.payload.instances;
   state.isLoading = false;
-  state.currentStep = 1; // Move to first example collection
+  // Only move to step 1 if we're on step 0 (initial load)
+  if (state.currentStep === 0) {
+    state.currentStep = 1;
+  }
 }
 
 /**
@@ -145,6 +148,56 @@ function startSynthesis(state: DraftState) {
   state.error = null;
 }
 
+/**
+ * Update draft selection (live editing, not committed)
+ */
+function updateDraftSelection(
+  state: DraftState,
+  action: { 
+    payload: { 
+      atomIds?: string[];
+      pairs?: [string, string][];
+    } 
+  }
+) {
+  if (action.payload.atomIds !== undefined) {
+    state.draftSelection.atomIds = action.payload.atomIds;
+  }
+  if (action.payload.pairs !== undefined) {
+    state.draftSelection.pairs = action.payload.pairs;
+  }
+}
+
+/**
+ * Commit draft selection to examples (when clicking Next)
+ */
+function commitDraftSelection(
+  state: DraftState,
+  action: { payload: { instanceIndex: number } }
+) {
+  const { instanceIndex } = action.payload;
+  const existingIndex = state.examples.findIndex(ex => ex.instanceIndex === instanceIndex);
+  
+  if (existingIndex >= 0) {
+    // Update existing example
+    state.examples[existingIndex].selectedAtomIds = state.draftSelection.atomIds;
+    state.examples[existingIndex].selectedPairs = state.draftSelection.pairs;
+  } else {
+    // Add new example
+    state.examples.push({
+      instanceIndex,
+      selectedAtomIds: [...state.draftSelection.atomIds],
+      selectedPairs: [...state.draftSelection.pairs]
+    });
+  }
+  
+  // Clear draft and move to next step
+  state.draftSelection = { atomIds: [], pairs: [] };
+  if (state.currentStep <= state.numInstances) {
+    state.currentStep++;
+  }
+}
+
 export default {
   enterSynthesisMode,
   exitSynthesisMode,
@@ -155,5 +208,7 @@ export default {
   synthesisStepBack,
   setSynthesisResult,
   setSynthesisError,
-  startSynthesis
+  startSynthesis,
+  updateDraftSelection,
+  commitDraftSelection
 };

@@ -194,22 +194,6 @@ const SynthesisModePanel = () => {
           <Text fontSize="sm" color="gray.600">
             Instance {currentStep} of {numInstances}
           </Text>
-
-          {currentStep === numInstances && examples.length === numInstances ? (
-            <Button
-              size="sm"
-              colorScheme="green"
-              onClick={handleStartSynthesis}
-              isLoading={isLoading}
-              isDisabled={!canSynthesize}
-            >
-              Synthesize Selector
-            </Button>
-          ) : (
-            <Text fontSize="sm" color="gray.600">
-              Confirm your selection to continue
-            </Text>
-          )}
         </div>
       )}
 

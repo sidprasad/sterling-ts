@@ -41,6 +41,11 @@ export interface SynthesisState {
   currentStep: number;
   /** Examples collected from user selections */
   examples: SynthesisExample[];
+  /** Draft selection for the current instance being edited (not yet committed) */
+  draftSelection: {
+    atomIds: string[];
+    pairs: [string, string][];
+  };
   /** Loaded instances for synthesis */
   loadedInstances: any[]; // Array of AlloyDataInstance
   /** The synthesized result, if available */
@@ -61,6 +66,10 @@ export function newSynthesisState(): SynthesisState {
     numInstances: 3, // Default
     currentStep: 0,
     examples: [],
+    draftSelection: {
+      atomIds: [],
+      pairs: []
+    },
     loadedInstances: [],
     result: null,
     error: null,

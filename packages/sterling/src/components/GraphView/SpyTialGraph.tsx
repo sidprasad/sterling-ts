@@ -193,7 +193,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       }
 
       // Step 1: Parse Alloy XML using CndCore
-      console.log('Parsing Alloy XML...');
+      //console.log('Parsing Alloy XML...');
       const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
       
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
@@ -204,13 +204,13 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // For temporal traces, select the instance at the current time step
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
       const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
-      console.log('Created Alloy Data Instance:', {
-        instanceIndex,
-        totalInstances: alloyDatum.instances.length,
-        types: alloyDataInstance.getTypes().length,
-        atoms: alloyDataInstance.getAtoms().length,
-        relations: alloyDataInstance.getRelations().length
-      });
+      // console.log('Created Alloy Data Instance:', {
+      //   instanceIndex,
+      //   totalInstances: alloyDatum.instances.length,
+      //   types: alloyDataInstance.getTypes().length,
+      //   atoms: alloyDataInstance.getAtoms().length,
+      //   relations: alloyDataInstance.getRelations().length
+      // });
 
       // Notify parent if in synthesis mode - pass raw instance data (not class) for Redux storage
       if (synthesisMode && onDataInstanceCreated) {
@@ -223,7 +223,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance }); // Pass AlloyDataInstance, not raw XML
       
-      console.log('Created SGraphQueryEvaluator for layout generation');
+      //console.log('Created SGraphQueryEvaluator for layout generation');
 
       // Step 4: Parse layout specification
       // Note: An empty cndSpec is valid and has semantic meaning (no constraints/directives)
@@ -302,7 +302,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       if (graphElementRef.current && layoutResult.layout) {
         // Log the nodes in the new layout
         const newLayoutNodeIds = layoutResult.layout.nodes?.map((n: any) => n.id || n.name || n.label) || [];
-        console.log('Nodes in new layout:', newLayoutNodeIds);
+        //console.log('Nodes in new layout:', newLayoutNodeIds);
         
         // Check if we have prior positions to use
         const hasPriorPositions = priorPositions && (
@@ -381,7 +381,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     const handleNodeDragEnd = (e: CustomEvent) => {
       const detail = e.detail;
       if (detail.nodePositions && detail.nodePositions.length > 0) {
-        console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
+        //console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
         if (onNodePositionsChangeRef.current) {
           onNodePositionsChangeRef.current(detail.nodePositions);
         }

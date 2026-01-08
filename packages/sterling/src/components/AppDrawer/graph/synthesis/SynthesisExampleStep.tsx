@@ -92,8 +92,14 @@ export const SynthesisExampleStep = () => {
       return;
     }
     
-    // Commit draft to examples with data instance
-    dispatch(commitDraftSelection({ instanceIndex, dataInstance: currentDataInstance }));
+    console.log('[SynthesisExample] Committing selection:', { instanceIndex, atomIds: selectedAtomIds });
+    
+    // Commit draft to examples with data instance AND atom IDs
+    dispatch(commitDraftSelection({ 
+      instanceIndex, 
+      dataInstance: currentDataInstance,
+      atomIds: selectedAtomIds 
+    }));
     
     // Request next instance from Forge if not the last one
     if (currentStep < numInstances && datum?.generatorName) {

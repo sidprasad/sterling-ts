@@ -121,8 +121,14 @@ export const BinaryExampleStep = () => {
       return;
     }
     
-    // Commit draft to examples with data instance
-    dispatch(commitDraftSelection({ instanceIndex, dataInstance: currentDataInstance }));
+    console.log('[BinaryExample] Committing selection:', { instanceIndex, pairs: selectedPairs });
+    
+    // Commit draft to examples with data instance AND pairs
+    dispatch(commitDraftSelection({ 
+      instanceIndex, 
+      dataInstance: currentDataInstance,
+      pairs: selectedPairs 
+    }));
     
     // Request next instance from Forge if not the last one
     if (currentStep < numInstances && datum?.generatorName) {

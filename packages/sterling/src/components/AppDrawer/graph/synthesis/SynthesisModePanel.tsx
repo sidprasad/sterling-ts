@@ -193,6 +193,9 @@ const SynthesisModePanel = () => {
   // Auto-trigger synthesis when we have all examples and move past the collection step
   const shouldSynthesize = currentStep > numInstances && result === null && !isLoading && !error && examples.length === numInstances;
   
+  // Debug: Check why canSynthesize might be false
+  const examplesHaveSelections = examples.every((ex: any) => ex.selectedAtomIds.length > 0 || ex.selectedPairs.length > 0);
+  
   console.log('[SynthesisPanel] State:', {
     currentStep,
     numInstances,
@@ -202,7 +205,13 @@ const SynthesisModePanel = () => {
     examplesLength: examples.length,
     shouldSynthesize,
     canSynthesize,
-    examples: examples.map(e => ({ instanceIndex: e.instanceIndex, atoms: e.selectedAtomIds, hasDataInstance: !!e.dataInstance }))
+    examplesHaveSelections,
+    examples: examples.map(e => ({ 
+      instanceIndex: e.instanceIndex, 
+      selectedAtomIds: e.selectedAtomIds,
+      selectedPairs: e.selectedPairs,
+      hasDataInstance: !!e.dataInstance 
+    }))
   });
 
   useEffect(() => {

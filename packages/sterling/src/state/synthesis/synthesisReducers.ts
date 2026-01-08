@@ -170,25 +170,26 @@ function updateDraftSelection(
 
 /**
  * Commit draft selection to examples (when clicking Next)
+ * Now accepts atomIds and pairs directly in payload (instead of reading from draftSelection)
  */
 function commitDraftSelection(
   state: DraftState,
-  action: { payload: { instanceIndex: number; dataInstance: any } }
+  action: { payload: { instanceIndex: number; dataInstance: any; atomIds?: string[]; pairs?: [string, string][] } }
 ) {
-  const { instanceIndex, dataInstance } = action.payload;
+  const { instanceIndex, dataInstance, atomIds = [], pairs = [] } = action.payload;
   const existingIndex = state.examples.findIndex(ex => ex.instanceIndex === instanceIndex);
   
   if (existingIndex >= 0) {
     // Update existing example
-    state.examples[existingIndex].selectedAtomIds = state.draftSelection.atomIds;
-    state.examples[existingIndex].selectedPairs = state.draftSelection.pairs;
+    state.examples[existingIndex].selectedAtomIds = atomIds;
+    state.examples[existingIndex].selectedPairs = pairs;
     state.examples[existingIndex].dataInstance = dataInstance;
   } else {
     // Add new example
     state.examples.push({
       instanceIndex,
-      selectedAtomIds: [...state.draftSelection.atomIds],
-      selectedPairs: [...state.draftSelection.pairs],
+      selectedAtomIds: [...atomIds],
+      selectedPairs: [...pairs],
       dataInstance
     });
   }

@@ -90,7 +90,7 @@ export const SynthesisSetupStep = () => {
           <NumberInput
             value={numInstances}
             onChange={(_, val) => setNumInstances(val)}
-            min={2}
+            min={1}
             max={10}
             step={1}
           >

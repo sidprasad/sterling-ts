@@ -212,9 +212,11 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         relations: alloyDataInstance.getRelations().length
       });
 
-      // Notify parent if in synthesis mode
+      // Notify parent if in synthesis mode - pass raw instance data (not class) for Redux storage
       if (synthesisMode && onDataInstanceCreated) {
-        onDataInstanceCreated(alloyDataInstance);
+        // Pass the raw instance data that can be used to recreate AlloyDataInstance later
+        // We can't store AlloyDataInstance in Redux because class methods don't survive serialization
+        onDataInstanceCreated(alloyDatum.instances[instanceIndex]);
       }
 
       // Step 3: Create SGraphQueryEvaluator for layout generation
@@ -314,18 +316,18 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
             ? priorPositions.map((p: NodePositionEntry) => p.id)
             : Object.keys(priorPositions);
           const matchingIds = priorIds.filter((id: string) => newLayoutNodeIds.includes(id));
-          console.log('Prior position IDs:', priorIds);
-          console.log('Matching IDs between prior positions and new layout:', matchingIds);
-          console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
+          // console.log('Prior position IDs:', priorIds);
+          // console.log('Matching IDs between prior positions and new layout:', matchingIds);
+          // console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
           
           // Show actual position values for matching nodes
           if (Array.isArray(priorPositions)) {
             const matchingPositions = priorPositions.filter((p: NodePositionEntry) => newLayoutNodeIds.includes(p.id));
-            console.log('Prior positions for matching nodes:', matchingPositions);
+            //console.log('Prior positions for matching nodes:', matchingPositions);
           }
         }
         
-        console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(priorPositions) ? priorPositions.length : Object.keys(priorPositions!).length) + ' nodes' : 'none');
+        //console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(priorPositions) ? priorPositions.length : Object.keys(priorPositions!).length) + ' nodes' : 'none');
         
         // Render - the layout-complete event will capture final positions
         await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
@@ -359,14 +361,14 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     // This is crucial for temporal consistency - we want positions AFTER constraints are applied
     const handleLayoutComplete = (e: CustomEvent) => {
       const detail = e.detail;
-      console.log('Layout complete! Capturing final positions for temporal consistency.');
+      //console.log('Layout complete! Capturing final positions for temporal consistency.');
       
       if (detail.nodePositions && detail.nodePositions.length > 0) {
-        console.log(`Captured ${detail.nodePositions.length} final node positions from layout-complete event`);
-        // Log a few for debugging
-        detail.nodePositions.slice(0, 3).forEach((p: NodePositionEntry) => {
-          console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
-        });
+        // console.log(`Captured ${detail.nodePositions.length} final node positions from layout-complete event`);
+        // // Log a few for debugging
+        // detail.nodePositions.slice(0, 3).forEach((p: NodePositionEntry) => {
+        //   console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
+        // });
         
         // Call the callback with the captured positions
         if (onNodePositionsChangeRef.current) {

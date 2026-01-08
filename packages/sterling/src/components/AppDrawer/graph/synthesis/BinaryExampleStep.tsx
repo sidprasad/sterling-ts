@@ -165,61 +165,16 @@ export const BinaryExampleStep = () => {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onBlur={handleBlur}
-            placeholder="e.g., Alice:Bob, Charlie:Diana"
             size="lg"
             fontFamily="monospace"
             isInvalid={parseError !== null}
           />
-          {parseError ? (
+          {parseError && (
             <Text fontSize="xs" color="red.600" mt={1}>
               {parseError}
             </Text>
-          ) : (
-            <Text fontSize="xs" color="gray.500" mt={1}>
-              Example: Node0:Node1, Node2:Node3
-            </Text>
           )}
         </div>
-
-        {/* Show parsed pairs */}
-        {selectedPairs.length > 0 && !parseError && (
-          <div>
-            <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={2}>
-              {selectedPairs.length} pair{selectedPairs.length !== 1 ? 's' : ''} will be highlighted:
-            </Text>
-            <VStack spacing={2} align="stretch">
-              {selectedPairs.map(([a, b], idx) => (
-                <HStack
-                  key={idx}
-                  p={2}
-                  bg="white"
-                  rounded="md"
-                  borderWidth={1}
-                  borderColor="purple.300"
-                  justify="space-between"
-                >
-                  <HStack spacing={2}>
-                    <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>
-                      {a}
-                    </Badge>
-                    <MdArrowForward color="#805AD5" />
-                    <Badge colorScheme="red" fontSize="sm" px={2} py={1}>
-                      {b}
-                    </Badge>
-                  </HStack>
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    colorScheme="gray"
-                    onClick={() => handleRemovePair(idx)}
-                  >
-                    <MdClose />
-                  </Button>
-                </HStack>
-              ))}
-            </VStack>
-          </div>
-        )}
       </div>
 
       {/* Spacer */}

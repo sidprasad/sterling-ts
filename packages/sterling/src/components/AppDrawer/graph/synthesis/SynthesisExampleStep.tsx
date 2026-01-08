@@ -31,8 +31,6 @@ export const SynthesisExampleStep = () => {
   const instance = instances[instanceIndex];
   const currentExample = examples.find((ex) => ex.instanceIndex === instanceIndex);
 
-  console.log('[SynthesisExample] currentStep:', currentStep, 'instanceIndex:', instanceIndex, 'instances.length:', instances.length, 'instance:', instance);
-
   // Initialize from existing example if present, otherwise clear
   useEffect(() => {
     if (currentExample) {
@@ -131,30 +129,10 @@ export const SynthesisExampleStep = () => {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onBlur={handleBlur}
-            placeholder="e.g., Alice, Bob, Charlie"
             size="lg"
             fontFamily="monospace"
           />
-          <Text fontSize="xs" color="gray.500" mt={1}>
-            Example: Node0, Node1, Node2
-          </Text>
         </div>
-
-        {/* Show parsed atoms as badges */}
-        {selectedAtomIds.length > 0 && (
-          <div>
-            <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={2}>
-              {selectedAtomIds.length} atom{selectedAtomIds.length !== 1 ? 's' : ''} will be highlighted:
-            </Text>
-            <HStack spacing={2} flexWrap="wrap">
-              {selectedAtomIds.map((atomId) => (
-                <Badge key={atomId} colorScheme="blue" fontSize="sm" px={2} py={1}>
-                  {atomId}
-                </Badge>
-              ))}
-            </HStack>
-          </div>
-        )}
       </div>
 
       {/* Spacer */}

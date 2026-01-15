@@ -7,7 +7,8 @@ export type GraphDrawerView =
   | CommonDrawerView
   | 'state'
   | 'layout'
-  | 'settings';
+  | 'settings'
+  | 'synthesis';
 export type TableDrawerView = CommonDrawerView | 'state' | 'settings';
 export type ScriptDrawerView = CommonDrawerView | 'variables' | 'settings';
 

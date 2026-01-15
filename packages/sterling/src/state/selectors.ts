@@ -644,11 +644,11 @@ export function selectCnDSpec(
  * Synthesis mode selectors
  */
 export function selectIsSynthesisEnabled(state: SterlingState): boolean {
-  return providerSelectors.selectHasFeature(state.provider, 'synthesis');
+  return providerSelectors.selectIsSynthesisEnabled(state.provider);
 }
 
 export function selectIsSynthesisActive(state: SterlingState): boolean {
-  return selectIsSynthesisEnabled(state) && state.synthesis.isActive;
+  return state.synthesis.isActive;
 }
 
 export function selectSynthesisSelectorType(state: SterlingState) {
@@ -687,6 +687,18 @@ export function selectCanSynthesize(state: SterlingState): boolean {
   return (
     !state.synthesis.isLoading &&
     state.synthesis.examples.length === state.synthesis.numInstances &&
-    state.synthesis.examples.every((ex) => ex.selectedAtomIds.length > 0)
+    state.synthesis.examples.every((ex: any) => ex.selectedAtomIds.length > 0 || ex.selectedPairs.length > 0)
   );
+}
+
+export function selectSynthesisDraftAtomIds(state: SterlingState): string[] {
+  return state.synthesis.draftSelection.atomIds;
+}
+
+export function selectSynthesisDraftPairs(state: SterlingState): [string, string][] {
+  return state.synthesis.draftSelection.pairs;
+}
+
+export function selectSynthesisCurrentDataInstance(state: SterlingState): any | null {
+  return state.synthesis.currentDataInstance;
 }

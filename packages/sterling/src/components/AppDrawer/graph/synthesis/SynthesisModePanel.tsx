@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Icon, Progress, Text } from '@chakra-ui/react';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdArrowBack, MdArrowForward, MdClose, MdScience } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import {
@@ -60,28 +60,70 @@ const SynthesisModePanel = () => {
     dispatch(startSynthesis());
 
     try {
+      // Helper to create AlloyDataInstance from raw instance data
+      // We store raw data in Redux (not the class) because class methods don't survive serialization
+      const createDataInstance = (rawInstanceData: any) => {
+        return new window.CndCore.AlloyDataInstance(rawInstanceData);
+      };
+
+      // Helper to find atom object by ID
+      const findAtomById = (dataInstance: any, atomId: string) => {
+        const allAtoms = dataInstance.getAtoms();
+        console.log('[Synthesis] Looking for atom:', atomId, 'in', allAtoms.length, 'atoms');
+        console.log('[Synthesis] Available atom IDs:', allAtoms.map((a: any) => a.id));
+        const atom = allAtoms.find((a: any) => a.id === atomId);
+        if (!atom) {
+          throw new Error(`Atom not found: ${atomId}`);
+        }
+        return atom;
+      };
+
       if (selectorType === 'unary') {
-        // Unary selector synthesis
+        // Unary selector synthesis - convert atom IDs to atom objects
+        console.log('[Synthesis] Starting unary synthesis with', examples.length, 'examples');
+        console.log('[Synthesis] Examples:', examples.map(ex => ({
+          instanceIndex: ex.instanceIndex,
+          selectedAtomIds: ex.selectedAtomIds,
+          hasDataInstance: !!ex.dataInstance
+        })));
+
+        const synthesisExamples = examples.map((ex, idx) => {
+          const rawInstanceData = ex.dataInstance;
+          console.log(`[Synthesis] Example ${idx}: rawInstanceData =`, rawInstanceData);
+          if (!rawInstanceData) {
+            throw new Error(`Example ${ex.instanceIndex + 1}: Missing data instance`);
+          }
+          // Recreate AlloyDataInstance from raw data (can't store class in Redux)
+          const dataInstance = createDataInstance(rawInstanceData);
+          console.log(`[Synthesis] Example ${idx}: recreated AlloyDataInstance with ${dataInstance.getAtoms().length} atoms`);
+          const atoms = ex.selectedAtomIds.map(atomId => findAtomById(dataInstance, atomId));
+          console.log(`[Synthesis] Example ${idx}: converted ${ex.selectedAtomIds.length} IDs to atoms`);
+          return {
+            atoms,
+            dataInstance
+          };
+        });
+
+        console.log('[Synthesis] Calling synthesizeAtomSelectorWithExplanation with:', synthesisExamples);
         const result = window.CndCore.synthesizeAtomSelectorWithExplanation(
-          examples.map((ex) => ({
-            atomIds: ex.selectedAtomIds,
-            instanceData: instances[ex.instanceIndex]
-          })),
+          synthesisExamples,
           3 // maxDepth
         );
+        console.log('[Synthesis] Result:', result);
 
         if (!result) {
           throw new Error('Synthesis failed - no selector found');
         }
 
         // Evaluate against all instances to show matches
-        const matchesByInstance = instances.map((inst, idx) => {
+        const matchesByInstance = examples.map((ex, idx) => {
+          const dataInstance = createDataInstance(ex.dataInstance);
           const evaluator = new window.CndCore.SGraphQueryEvaluator();
-          evaluator.initialize({ sourceData: inst }); // Pass AlloyDataInstance
+          evaluator.initialize({ sourceData: dataInstance });
           const evalResult = evaluator.evaluate(result.expression);
           return {
             instanceIndex: idx,
-            matchedAtomIds: evalResult.selectedAtoms ? evalResult.selectedAtoms() : []
+            matchedAtomIds: evalResult.selectedAtoms ? evalResult.selectedAtoms().map((a: any) => a.id) : []
           };
         });
 
@@ -94,12 +136,26 @@ const SynthesisModePanel = () => {
           })
         );
       } else {
-        // Binary selector synthesis
-        const result = window.CndCore.synthesizeBinarySelector(
-          examples.map((ex) => ({
-            pairs: ex.selectedPairs,
-            instanceData: instances[ex.instanceIndex]
-          })),
+        // Binary selector synthesis - convert pair IDs to atom objects
+        const synthesisExamples = examples.map((ex) => {
+          const rawInstanceData = ex.dataInstance;
+          if (!rawInstanceData) {
+            throw new Error(`Example ${ex.instanceIndex + 1}: Missing data instance`);
+          }
+          const dataInstance = createDataInstance(rawInstanceData);
+          const pairs = ex.selectedPairs.map(([srcId, dstId]) => {
+            const src = findAtomById(dataInstance, srcId);
+            const dst = findAtomById(dataInstance, dstId);
+            return [src, dst];
+          });
+          return {
+            pairs,
+            dataInstance
+          };
+        });
+
+        const result = window.CndCore.synthesizeBinarySelectorWithExplanation(
+          synthesisExamples,
           3 // maxDepth
         );
 
@@ -108,14 +164,15 @@ const SynthesisModePanel = () => {
         }
 
         // Evaluate against all instances
-        const pairMatchesByInstance = instances.map((inst, idx) => {
+        const pairMatchesByInstance = examples.map((ex, idx) => {
+          const dataInstance = createDataInstance(ex.dataInstance);
           const evaluator = new window.CndCore.SGraphQueryEvaluator();
-          evaluator.initialize({ sourceData: inst }); // Pass AlloyDataInstance
+          evaluator.initialize({ sourceData: dataInstance });
           const evalResult = evaluator.evaluate(result.expression);
           const tuples = evalResult.selectedTuplesAll ? evalResult.selectedTuplesAll() : [];
           return {
             instanceIndex: idx,
-            matchedPairs: tuples.map((t: string[]) => [t[0], t[1]] as [string, string])
+            matchedPairs: tuples.map((t: any[]) => [t[0].id, t[1].id] as [string, string])
           };
         });
 
@@ -132,6 +189,38 @@ const SynthesisModePanel = () => {
       dispatch(setSynthesisError({ error: err.message || 'Synthesis failed' }));
     }
   };
+
+  // Auto-trigger synthesis when we have all examples and move past the collection step
+  const shouldSynthesize = currentStep > numInstances && result === null && !isLoading && !error && examples.length === numInstances;
+  
+  // Debug: Check why canSynthesize might be false
+  const examplesHaveSelections = examples.every((ex: any) => ex.selectedAtomIds.length > 0 || ex.selectedPairs.length > 0);
+  
+  console.log('[SynthesisPanel] State:', {
+    currentStep,
+    numInstances,
+    result,
+    isLoading,
+    error,
+    examplesLength: examples.length,
+    shouldSynthesize,
+    canSynthesize,
+    examplesHaveSelections,
+    examples: examples.map(e => ({ 
+      instanceIndex: e.instanceIndex, 
+      selectedAtomIds: e.selectedAtomIds,
+      selectedPairs: e.selectedPairs,
+      hasDataInstance: !!e.dataInstance 
+    }))
+  });
+
+  useEffect(() => {
+    if (shouldSynthesize && canSynthesize) {
+      console.log('[SynthesisPanel] Auto-triggering synthesis');
+      handleStartSynthesis();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldSynthesize, canSynthesize]);
 
   // Early return AFTER all hooks
   if (!isActive) return null;
@@ -194,22 +283,6 @@ const SynthesisModePanel = () => {
           <Text fontSize="sm" color="gray.600">
             Instance {currentStep} of {numInstances}
           </Text>
-
-          {currentStep === numInstances && examples.length === numInstances ? (
-            <Button
-              size="sm"
-              colorScheme="green"
-              onClick={handleStartSynthesis}
-              isLoading={isLoading}
-              isDisabled={!canSynthesize}
-            >
-              Synthesize Selector
-            </Button>
-          ) : (
-            <Text fontSize="sm" color="gray.600">
-              Confirm your selection to continue
-            </Text>
-          )}
         </div>
       )}
 

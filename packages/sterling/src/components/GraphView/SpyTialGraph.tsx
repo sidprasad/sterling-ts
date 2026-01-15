@@ -73,6 +73,10 @@ declare global {
       getNodePositions?: () => NodePositions;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
+      // Node highlighting for synthesis mode
+      clearNodeHighlights?: () => void;
+      highlightNodes?: (nodeIds: string[], color?: string) => boolean;
+      highlightNodePairs?: (pairs: [string, string][], options?: { showBadges?: boolean }) => boolean;
     };
   }
 }
@@ -94,10 +98,8 @@ interface SpyTialGraphProps {
   onCndSpecChange?: (spec: string) => void;
   /** Synthesis mode: enable node selection */
   synthesisMode?: boolean;
-  /** Selected atom IDs in synthesis mode */
-  synthesisSelectedAtoms?: string[];
-  /** Callback when atom is clicked in synthesis mode */
-  onSynthesisAtomClick?: (atomId: string) => void;
+  /** Callback to receive the AlloyDataInstance when it's created (for synthesis) */
+  onDataInstanceCreated?: (dataInstance: any) => void;
 }
 
 const SpyTialGraph = (props: SpyTialGraphProps) => {
@@ -108,8 +110,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     priorPositions, 
     onNodePositionsChange,
     synthesisMode = false,
-    synthesisSelectedAtoms = [],
-    onSynthesisAtomClick
+    onDataInstanceCreated
   } = props;
   // Separate ref for the graph container - this div is NOT managed by React's children
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -192,7 +193,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       }
 
       // Step 1: Parse Alloy XML using CndCore
-      console.log('Parsing Alloy XML...');
+      //console.log('Parsing Alloy XML...');
       const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
       
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
@@ -203,19 +204,26 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // For temporal traces, select the instance at the current time step
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
       const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
-      console.log('Created Alloy Data Instance:', {
-        instanceIndex,
-        totalInstances: alloyDatum.instances.length,
-        types: alloyDataInstance.getTypes().length,
-        atoms: alloyDataInstance.getAtoms().length,
-        relations: alloyDataInstance.getRelations().length
-      });
+      // console.log('Created Alloy Data Instance:', {
+      //   instanceIndex,
+      //   totalInstances: alloyDatum.instances.length,
+      //   types: alloyDataInstance.getTypes().length,
+      //   atoms: alloyDataInstance.getAtoms().length,
+      //   relations: alloyDataInstance.getRelations().length
+      // });
+
+      // Notify parent if in synthesis mode - pass raw instance data (not class) for Redux storage
+      if (synthesisMode && onDataInstanceCreated) {
+        // Pass the raw instance data that can be used to recreate AlloyDataInstance later
+        // We can't store AlloyDataInstance in Redux because class methods don't survive serialization
+        onDataInstanceCreated(alloyDatum.instances[instanceIndex]);
+      }
 
       // Step 3: Create SGraphQueryEvaluator for layout generation
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance }); // Pass AlloyDataInstance, not raw XML
       
-      console.log('Created SGraphQueryEvaluator for layout generation');
+      //console.log('Created SGraphQueryEvaluator for layout generation');
 
       // Step 4: Parse layout specification
       // Note: An empty cndSpec is valid and has semantic meaning (no constraints/directives)
@@ -294,7 +302,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       if (graphElementRef.current && layoutResult.layout) {
         // Log the nodes in the new layout
         const newLayoutNodeIds = layoutResult.layout.nodes?.map((n: any) => n.id || n.name || n.label) || [];
-        console.log('Nodes in new layout:', newLayoutNodeIds);
+        //console.log('Nodes in new layout:', newLayoutNodeIds);
         
         // Check if we have prior positions to use
         const hasPriorPositions = priorPositions && (
@@ -308,18 +316,18 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
             ? priorPositions.map((p: NodePositionEntry) => p.id)
             : Object.keys(priorPositions);
           const matchingIds = priorIds.filter((id: string) => newLayoutNodeIds.includes(id));
-          console.log('Prior position IDs:', priorIds);
-          console.log('Matching IDs between prior positions and new layout:', matchingIds);
-          console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
+          // console.log('Prior position IDs:', priorIds);
+          // console.log('Matching IDs between prior positions and new layout:', matchingIds);
+          // console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
           
           // Show actual position values for matching nodes
           if (Array.isArray(priorPositions)) {
             const matchingPositions = priorPositions.filter((p: NodePositionEntry) => newLayoutNodeIds.includes(p.id));
-            console.log('Prior positions for matching nodes:', matchingPositions);
+            //console.log('Prior positions for matching nodes:', matchingPositions);
           }
         }
         
-        console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(priorPositions) ? priorPositions.length : Object.keys(priorPositions!).length) + ' nodes' : 'none');
+        //console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(priorPositions) ? priorPositions.length : Object.keys(priorPositions!).length) + ' nodes' : 'none');
         
         // Render - the layout-complete event will capture final positions
         await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
@@ -353,29 +361,18 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     // This is crucial for temporal consistency - we want positions AFTER constraints are applied
     const handleLayoutComplete = (e: CustomEvent) => {
       const detail = e.detail;
-      console.log('Layout complete! Capturing final positions for temporal consistency.');
+      //console.log('Layout complete! Capturing final positions for temporal consistency.');
       
       if (detail.nodePositions && detail.nodePositions.length > 0) {
-        console.log(`Captured ${detail.nodePositions.length} final node positions from layout-complete event`);
-        // Log a few for debugging
-        detail.nodePositions.slice(0, 3).forEach((p: NodePositionEntry) => {
-          console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
-        });
+        // console.log(`Captured ${detail.nodePositions.length} final node positions from layout-complete event`);
+        // // Log a few for debugging
+        // detail.nodePositions.slice(0, 3).forEach((p: NodePositionEntry) => {
+        //   console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
+        // });
         
         // Call the callback with the captured positions
         if (onNodePositionsChangeRef.current) {
           onNodePositionsChangeRef.current(detail.nodePositions);
-        }
-      }
-    };
-    
-    // Listen for node clicks (for synthesis mode)
-    const handleNodeClick = (e: CustomEvent) => {
-      if (synthesisMode && onSynthesisAtomClick) {
-        const nodeId = e.detail?.nodeId || e.detail?.id;
-        if (nodeId) {
-          console.log('[SpyTialGraph] Node clicked in synthesis mode:', nodeId);
-          onSynthesisAtomClick(nodeId);
         }
       }
     };
@@ -384,7 +381,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     const handleNodeDragEnd = (e: CustomEvent) => {
       const detail = e.detail;
       if (detail.nodePositions && detail.nodePositions.length > 0) {
-        console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
+        //console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
         if (onNodePositionsChangeRef.current) {
           onNodePositionsChangeRef.current(detail.nodePositions);
         }
@@ -392,24 +389,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     };
 
     graphElement.addEventListener('layout-complete', handleLayoutComplete as EventListener);
-    graphElement.addEventListener('node-click', handleNodeClick as EventListener);
     graphElement.addEventListener('node-drag-end', handleNodeDragEnd as EventListener);
-    // Also listen to click events on the SVG directly
-    graphElement.addEventListener('click', (e: MouseEvent) => {
-      if (synthesisMode && onSynthesisAtomClick) {
-        // Try to find the clicked node from the event target
-        const target = e.target as Element;
-        const nodeGroup = target.closest('[data-node-id]') || target.closest('g.node');
-        if (nodeGroup) {
-          const nodeId = nodeGroup.getAttribute('data-node-id') || 
-                        nodeGroup.getAttribute('id')?.replace('node-', '');
-          if (nodeId) {
-            console.log('[SpyTialGraph] Node clicked via SVG:', nodeId);
-            onSynthesisAtomClick(nodeId);
-          }
-        }
-      }
-    });
 
     graphContainerRef.current.appendChild(graphElement);
     graphElementRef.current = graphElement;
@@ -460,23 +440,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
           cursor: synthesisMode ? 'pointer' : 'default'
         }}
       />
-      {/* Synthesis mode overlay */}
-      {synthesisMode && (
-        <div 
-          className="absolute top-0 left-0 right-0 p-3 bg-blue-500 text-white text-sm font-medium shadow-md"
-          style={{ zIndex: 15 }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🎯</span>
-            <span>Synthesis Mode: Click on nodes to select atoms</span>
-            {synthesisSelectedAtoms.length > 0 && (
-              <span className="ml-auto bg-white text-blue-600 px-2 py-1 rounded text-xs font-bold">
-                {synthesisSelectedAtoms.length} selected
-              </span>
-            )}
-          </div>
-        </div>
-      )}
       {/* React-managed overlay elements */}
       {isLoading && (
         <div 

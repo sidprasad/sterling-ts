@@ -3,6 +3,8 @@ export interface ProviderState {
   providerName: string;
   providerGenerators: string[] | undefined;
   features: string[];
+  /** Synthesis feature enabled via command-line flag (not provider) */
+  synthesisEnabled: boolean;
 }
 
 /**
@@ -13,6 +15,7 @@ export const newProviderState = (): ProviderState => {
     connected: false,
     providerName: 'unknown provider',
     providerGenerators: undefined,
-    features: []
+    features: [],
+    synthesisEnabled: false
   };
 };

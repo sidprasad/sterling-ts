@@ -11,6 +11,8 @@ export interface SynthesisExample {
   selectedAtomIds: string[];
   /** Atom pairs selected in this instance (for binary selectors) */
   selectedPairs: [string, string][];
+  /** The AlloyDataInstance for this example (needed for synthesis API) */
+  dataInstance: any; // AlloyDataInstance
 }
 
 export interface SynthesisResult {
@@ -41,8 +43,15 @@ export interface SynthesisState {
   currentStep: number;
   /** Examples collected from user selections */
   examples: SynthesisExample[];
+  /** Draft selection for the current instance being edited (not yet committed) */
+  draftSelection: {
+    atomIds: string[];
+    pairs: [string, string][];
+  };
   /** Loaded instances for synthesis */
   loadedInstances: any[]; // Array of AlloyDataInstance
+  /** Current AlloyDataInstance being viewed (for synthesis) */
+  currentDataInstance: any | null;
   /** The synthesized result, if available */
   result: SynthesisResult | null;
   /** Error message, if synthesis failed */
@@ -61,7 +70,12 @@ export function newSynthesisState(): SynthesisState {
     numInstances: 3, // Default
     currentStep: 0,
     examples: [],
+    draftSelection: {
+      atomIds: [],
+      pairs: []
+    },
     loadedInstances: [],
+    currentDataInstance: null,
     result: null,
     error: null,
     isLoading: false

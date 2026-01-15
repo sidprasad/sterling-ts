@@ -1,3 +1,4 @@
+export { SynthesisDrawer, SynthesisDrawerHeader } from './SynthesisDrawer';
 export { SynthesisModePanel } from './SynthesisModePanel';
 export { SynthesisSetupStep } from './SynthesisSetupStep';
 export { SynthesisExampleStep } from './SynthesisExampleStep';

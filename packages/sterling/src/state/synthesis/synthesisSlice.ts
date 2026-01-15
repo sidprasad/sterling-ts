@@ -21,7 +21,10 @@ export const {
   synthesisStepBack,
   setSynthesisResult,
   setSynthesisError,
-  startSynthesis
+  startSynthesis,
+  updateDraftSelection,
+  commitDraftSelection,
+  setCurrentDataInstance
 } = synthesisSlice.actions;
 
 export default synthesisSlice.reducer;

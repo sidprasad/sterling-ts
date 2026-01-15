@@ -25,23 +25,37 @@ export const synthesisMiddleware: Middleware<{}, SterlingState> = (store) => (ne
 
       // Only handle if synthesis is active and we're collecting examples
       if (synthesis.isActive && synthesis.currentStep > 0 && synthesis.currentStep <= synthesis.numInstances) {
-        const newDatum = action.payload;
+        const payload = action.payload;
         
-        // Check if this datum is from the expected generator
-        const activeDatum = state.data.data.find(d => d.id === state.data.activeDatum);
-        if (newDatum.generatorName === activeDatum?.generatorName && window.CndCore) {
-          console.log('[SynthesisMiddleware] New instance received, loading it for synthesis');
+        // Check if there are any new datums in the "enter" array
+        if (payload.enter && payload.enter.length > 0 && window.CndCore) {
+          const newDatum = payload.enter[payload.enter.length - 1]; // Get the last (newest) datum
+          const activeDatum = state.data.datumById[state.data.active || ''];
           
-          const parsedDatum = window.CndCore.AlloyInstance.parseAlloyXML(newDatum.data);
+          console.log('[SynthesisMiddleware] New datum received:', {
+            newDatumId: newDatum.id,
+            activeDatumId: activeDatum?.id,
+            generatorMatch: newDatum.generatorName === activeDatum?.generatorName,
+            currentStep: synthesis.currentStep,
+            numInstances: synthesis.numInstances
+          });
           
-          if (parsedDatum.instances && parsedDatum.instances.length > 0) {
-            const newInstance = new window.CndCore.AlloyDataInstance(
-              parsedDatum.instances[0]
-            );
+          // Check if this datum is from the expected generator
+          if (newDatum.generatorName === activeDatum?.generatorName) {
+            console.log('[SynthesisMiddleware] New instance from same generator, loading for synthesis');
             
-            // Add to loaded instances
-            const updatedInstances = [...synthesis.loadedInstances, newInstance];
-            store.dispatch(synthesisInstancesLoaded({ instances: updatedInstances }));
+            const parsedDatum = window.CndCore.AlloyInstance.parseAlloyXML(newDatum.data);
+            
+            if (parsedDatum.instances && parsedDatum.instances.length > 0) {
+              const newInstance = new window.CndCore.AlloyDataInstance(
+                parsedDatum.instances[0]
+              );
+              
+              // Add to loaded instances
+              const updatedInstances = [...synthesis.loadedInstances, newInstance];
+              console.log('[SynthesisMiddleware] Loaded instance, total now:', updatedInstances.length);
+              store.dispatch(synthesisInstancesLoaded({ instances: updatedInstances }));
+            }
           }
         }
       }

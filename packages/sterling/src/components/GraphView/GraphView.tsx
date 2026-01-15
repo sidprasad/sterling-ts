@@ -6,10 +6,9 @@ import {
   selectCnDSpec, 
   selectTimeIndex,
   selectIsSynthesisActive,
-  selectSynthesisStep,
-  selectSynthesisExamples
+  selectSynthesisStep
 } from '../../state/selectors';
-import { addSynthesisExample, updateSynthesisExample } from '../../state/synthesis/synthesisSlice';
+import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
 
@@ -30,12 +29,6 @@ const GraphView = () => {
   // Synthesis mode state
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
   const currentStep = useSterlingSelector(selectSynthesisStep);
-  const examples = useSterlingSelector(selectSynthesisExamples);
-  
-  // Get current example for synthesis mode
-  const instanceIndex = currentStep - 1;
-  const currentExample = examples.find((ex) => ex.instanceIndex === instanceIndex);
-  const selectedAtomIds = currentExample?.selectedAtomIds || [];
 
   // Store node positions for temporal trace continuity
   // We use a ref to avoid re-renders when positions change
@@ -45,31 +38,13 @@ const GraphView = () => {
   const handleNodePositionsChange = useCallback((positions: NodePositions) => {
     nodePositionsRef.current = positions;
   }, []);
-  
-  // Handle atom click in synthesis mode
-  const handleSynthesisAtomClick = useCallback((atomId: string) => {
-    console.log('[GraphView] Atom clicked:', atomId, 'current example:', currentExample);
-    
-    const newSelectedIds = selectedAtomIds.includes(atomId)
-      ? selectedAtomIds.filter(id => id !== atomId)
-      : [...selectedAtomIds, atomId];
-    
-    if (currentExample) {
-      // Update existing example
-      dispatch(updateSynthesisExample({
-        instanceIndex,
-        selectedAtomIds: newSelectedIds
-      }));
-    } else {
-      // This shouldn't happen normally, but handle it
-      console.warn('[GraphView] No current example found, creating one');
-      dispatch(addSynthesisExample({
-        instanceIndex,
-        selectedAtomIds: newSelectedIds,
-        selectedPairs: []
-      }));
+
+  // Callback to receive the AlloyDataInstance for synthesis
+  const handleDataInstanceCreated = useCallback((dataInstance: any) => {
+    if (isSynthesisActive) {
+      dispatch(setCurrentDataInstance({ dataInstance }));
     }
-  }, [dispatch, instanceIndex, currentExample, selectedAtomIds]);
+  }, [dispatch, isSynthesisActive]);
 
   return (
     <Pane className='grid grid-flow-col divide-x divide-dashed'>
@@ -87,8 +62,7 @@ const GraphView = () => {
                 priorPositions={nodePositionsRef.current}
                 onNodePositionsChange={handleNodePositionsChange}
                 synthesisMode={isSynthesisActive && currentStep > 0}
-                synthesisSelectedAtoms={selectedAtomIds}
-                onSynthesisAtomClick={handleSynthesisAtomClick}
+                onDataInstanceCreated={handleDataInstanceCreated}
               />
             </PaneBody>
           </Pane>

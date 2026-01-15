@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const Dotenv = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
@@ -22,6 +23,9 @@ module.exports = (env, argv) => {
   const mode = argv.mode;
   const isDev = mode === 'development';
   const envPath = envs[env.provider];
+  const synthesisEnabled = env.synthesis === 'true' || env.synthesis === true;
+  
+  console.log('[Webpack] Building with synthesis:', synthesisEnabled, 'from env.synthesis:', env.synthesis);
 
   return {
     mode: isDev ? 'development' : 'production',
@@ -83,6 +87,9 @@ module.exports = (env, argv) => {
     },
     plugins: [
       isDev && new ReactRefreshWebpackPlugin(),
+      new webpack.DefinePlugin({
+        'process.env.SYNTHESIS_ENABLED': JSON.stringify(synthesisEnabled)
+      }),
       new Dotenv({
         path: envPath
       }),

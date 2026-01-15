@@ -1,15 +1,17 @@
 import { SideBarButton } from '@/sterling-ui';
 import { FaFilm } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
-import { MdWorkspacesOutline } from 'react-icons/md';
+import { MdScience, MdWorkspacesOutline } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
-import { selectGraphDrawer, selectMainView } from '../../state/selectors';
+import { selectGraphDrawer, selectIsSynthesisEnabled, selectMainView } from '../../state/selectors';
 import { graphDrawerViewChanged } from '../../state/ui/uiSlice';
 
 const GraphViewButtons = () => {
   const dispatch = useSterlingDispatch();
   const view = useSterlingSelector(selectMainView);
   const drawer = useSterlingSelector(selectGraphDrawer);
+  const isSynthesisEnabled = useSterlingSelector(selectIsSynthesisEnabled);
+  
   return (
     <>
       <SideBarButton
@@ -24,6 +26,14 @@ const GraphViewButtons = () => {
         isActive={view === 'GraphView' && drawer === 'layout'}
         onClick={() => dispatch(graphDrawerViewChanged('layout'))}
       />
+      {isSynthesisEnabled && (
+        <SideBarButton
+          text='Synthesis'
+          rightIcon={<MdScience />}
+          isActive={view === 'GraphView' && drawer === 'synthesis'}
+          onClick={() => dispatch(graphDrawerViewChanged('synthesis'))}
+        />
+      )}
       <SideBarButton
         text='Settings'
         rightIcon={<IoSettingsOutline />}

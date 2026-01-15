@@ -644,7 +644,7 @@ export function selectCnDSpec(
  * Synthesis mode selectors
  */
 export function selectIsSynthesisEnabled(state: SterlingState): boolean {
-  return providerSelectors.selectHasFeature(state.provider, 'synthesis');
+  return providerSelectors.selectIsSynthesisEnabled(state.provider);
 }
 
 export function selectIsSynthesisActive(state: SterlingState): boolean {

@@ -1,10 +1,10 @@
 import {
   dataRequested,
   metaRequested,
-  metaReceived,
   sterlingConnected
 } from '@/sterling-connection';
 import { Dispatch, Middleware, MiddlewareAPI } from 'redux';
+import { synthesisFeatureEnabled } from '../state/provider/providerSlice';
 
 declare const process: {
   env: {
@@ -20,13 +20,10 @@ function sterlingMiddleware<S, D extends Dispatch>(): Middleware<{}, S, D> {
       // Check if synthesis is enabled - webpack DefinePlugin can pass boolean or string
       const synthesisEnabled = process.env.SYNTHESIS_ENABLED === true || process.env.SYNTHESIS_ENABLED === 'true';
       
-      // If synthesis flag is enabled via command line, inject feature flag
+      // If synthesis flag is enabled via command line, set the dedicated flag
       if (synthesisEnabled) {
         console.log('[Sterling] Synthesis mode enabled via command-line flag');
-        api.dispatch(metaReceived({
-          name: 'forge-synthesis',
-          features: ['synthesis']
-        }));
+        api.dispatch(synthesisFeatureEnabled(true));
       }
       
       api.dispatch(metaRequested());

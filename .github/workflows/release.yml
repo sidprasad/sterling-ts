@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create release for'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Run tests
+        run: yarn test
+      
+      - name: Build Alloy distribution
+        run: yarn build:alloy
+      
+      - name: Package Alloy build
+        run: |
+          cd dist
+          zip -r ../sterling-alloy.zip .
+          cd ..
+      
+      - name: Build Forge distribution
+        run: yarn build:forge
+      
+      - name: Package Forge build
+        run: |
+          cd dist
+          zip -r ../sterling-forge.zip .
+          cd ..
+      
+      - name: Extract version from package.json
+        id: package_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      
+      - name: Determine tag name
+        id: tag_name
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag_name.outputs.tag }}
+          name: Release ${{ steps.tag_name.outputs.tag }}
+          body: |
+            ## Sterling Layout v${{ steps.package_version.outputs.version }}
+            
+            A fork of the Sterling visualizer with support for declarative layout.
+            
+            ### Downloads
+            
+            - **sterling-alloy.zip**: Build for Alloy Analyzer
+            - **sterling-forge.zip**: Build for Forge
+            
+            ### Installation
+            
+            1. Download the appropriate zip file for your tool (Alloy or Forge)
+            2. Extract the contents to your desired location
+            3. Open `index.html` in your browser or serve via your Alloy/Forge instance
+            
+            ### Changes
+            
+            See the [commit history](https://github.com/${{ github.repository }}/commits/${{ steps.tag_name.outputs.tag }}) for details.
+          files: |
+            sterling-alloy.zip
+            sterling-forge.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

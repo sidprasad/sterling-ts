@@ -200,7 +200,7 @@ const GraphLayoutDrawer = () => {
 
   return (
     <div className="absolute inset-0 flex flex-col overflow-y-auto bg-slate-50/90 text-slate-900">
-      {/* Error display area - SpyTial mounts here, pushes content down */}
+      {/* Error display area - SpyTial mounts here */}
       <div
         id="layout-error-mount"
         ref={errorMountRef}
@@ -208,28 +208,31 @@ const GraphLayoutDrawer = () => {
         aria-live="polite"
       />
 
-      <div className="flex-1 space-y-4 p-4">
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-3 backdrop-blur shadow-sm">
-          <div
-            id="layout-projection-mount"
-            ref={projectionMountRef}
-            className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-2"
-          />
+      <div className="flex-1 space-y-3 p-3">
+        {/* Projection Controls */}
+        <div
+          id="layout-projection-mount"
+          ref={projectionMountRef}
+          className="rounded-lg border border-slate-200 bg-white/90 p-2 shadow-sm"
+        />
 
-          <div className="grid gap-2">
-            <button
-              type="button"
-              onClick={applyLayout}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:from-indigo-500 hover:to-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-            >
-              Apply Layout
-            </button>
-          </div>
-
-          <label className="group relative flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-2 text-[12px] text-slate-700 shadow-inner transition hover:border-slate-400 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-200">
-            <span className="text-[11px] uppercase tracking-[0.12em] text-slate-500">
-              Upload .cnd file here
-            </span>
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={applyLayout}
+            className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
+            Apply Layout
+          </button>
+          
+          <label className="group relative flex-1 cursor-pointer">
+            <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-indigo-400 hover:text-indigo-600 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Upload .cnd
+            </div>
             <input
               type="file"
               accept=".cnd"
@@ -240,11 +243,12 @@ const GraphLayoutDrawer = () => {
           </label>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm p-4">
+        {/* Editor */}
+        <div className="rounded-lg border border-slate-200 bg-white shadow-sm p-3">
           <div
             id="cnd-editor-mount"
             ref={cndEditorRef}
-            className="min-h-[360px] overflow-hidden rounded-xl border border-dashed border-slate-200 bg-slate-50/80 shadow-inner"
+            className="min-h-[360px] overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
           />
         </div>
       </div>

@@ -16,4 +16,16 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn test
       - run: yarn build:alloy
+      - name: Upload Alloy build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sterling-alloy-build
+          path: dist/
+          retention-days: 7
       - run: yarn build:forge
+      - name: Upload Forge build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sterling-forge-build
+          path: dist/
+          retention-days: 7

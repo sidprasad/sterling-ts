@@ -388,8 +388,17 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       }
     };
 
+    // Listen for viewBox changes (zoom/pan) to preserve across instances
+    const handleViewBoxChange = (e: CustomEvent) => {
+      const detail = e.detail;
+      if (detail.viewBox) {
+        viewBoxRef.current = detail.viewBox;
+      }
+    };
+
     graphElement.addEventListener('layout-complete', handleLayoutComplete as EventListener);
     graphElement.addEventListener('node-drag-end', handleNodeDragEnd as EventListener);
+    graphElement.addEventListener('viewbox-change', handleViewBoxChange as EventListener);
 
     graphContainerRef.current.appendChild(graphElement);
     graphElementRef.current = graphElement;
@@ -400,6 +409,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       if (graphElementRef.current) {
         graphElementRef.current.removeEventListener('layout-complete', handleLayoutComplete as EventListener);
         graphElementRef.current.removeEventListener('node-drag-end', handleNodeDragEnd as EventListener);
+        graphElementRef.current.removeEventListener('viewbox-change', handleViewBoxChange as EventListener);
         
         if (graphElementRef.current.clear) {
           graphElementRef.current.clear();

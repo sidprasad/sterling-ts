@@ -50,7 +50,7 @@ const ExplorerDrawer = () => {
     <>
       
       <Box p={1} shadow='md' borderWidth='1px'>
-        <Heading fontSize='l' align='center'>Select an Available Command</Heading>
+        <Heading fontSize='sm' align='center' fontWeight='medium'>Select an Available Command</Heading>
         <Flex>
           <Select isDisabled={!generatorNames || generatorNames.length < 1} 
                   value={generator}
@@ -80,7 +80,7 @@ const ExplorerDrawer = () => {
       </Box>
 
       <Box p={1} shadow='md' borderWidth='1px'>
-        <Heading fontSize='l' align='center'>Instance History for <i>{generator}</i></Heading>
+        <Heading fontSize='xs' align='center' fontWeight='normal'>Instance History for <i>{generator}</i></Heading>
       </Box>
       
       <hr/>

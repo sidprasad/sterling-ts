@@ -241,30 +241,11 @@ const GraphLayoutDrawer = () => {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm p-4">
-          <div className="flex flex-col gap-2 pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-xs">
-              <span
-                className={`inline-flex h-2 w-2 rounded-full ${isEditorMounted ? 'bg-emerald-500' : 'bg-amber-400'} shadow-[0_0_0_4px_rgba(15,23,42,0.05)]`}
-                aria-hidden
-              />
-              <span className="text-slate-600">
-                {isEditorMounted ? 'Editor ready' : 'Mounting editor…'}
-              </span>
-            </div>
-          </div>
-
           <div
             id="cnd-editor-mount"
             ref={cndEditorRef}
             className="min-h-[360px] overflow-hidden rounded-xl border border-dashed border-slate-200 bg-slate-50/80 shadow-inner"
           />
-
-          {!isEditorMounted && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500" aria-live="polite">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-indigo-500" aria-hidden />
-              <span>Loading CnD Layout Editor…</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

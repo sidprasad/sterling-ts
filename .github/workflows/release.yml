@@ -31,8 +31,24 @@ jobs:
       - name: Run tests
         run: yarn test
       
+      - name: Extract version from package.json
+        id: package_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      
       - name: Build Alloy distribution
         run: yarn build:alloy
+      
+      - name: Add version.json to Alloy build
+        run: |
+          cat > dist/version.json << EOF
+          {
+            "name": "Sterling Layout",
+            "version": "${{ steps.package_version.outputs.version }}",
+            "build": "alloy",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "tag": "${{ steps.tag_name.outputs.tag }}"
+          }
+          EOF
       
       - name: Package Alloy build
         run: |
@@ -43,15 +59,23 @@ jobs:
       - name: Build Forge distribution
         run: yarn build:forge
       
+      - name: Add version.json to Forge build
+        run: |
+          cat > dist/version.json << EOF
+          {
+            "name": "Sterling Layout",
+            "version": "${{ steps.package_version.outputs.version }}",
+            "build": "forge",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "tag": "${{ steps.tag_name.outputs.tag }}"
+          }
+          EOF
+      
       - name: Package Forge build
         run: |
           cd dist
           zip -r ../sterling-forge.zip .
           cd ..
-      
-      - name: Extract version from package.json
-        id: package_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       
       - name: Determine tag name
         id: tag_name

@@ -1,6 +1,8 @@
-# sterling-ts
+# Spytial Sterling (sterling-ts)
 
 https://sterling-docs.vercel.app/
+
+Spytial Sterling is a fork of Sterling that encodes spatial layout.
 
 ## How to run
 
@@ -11,7 +13,7 @@ and then either:
 * `yarn run dev:forge` (run in dev mode for Forge)
 * `yarn run dev:alloy` (run in dev mode for Alloy; this is needed if you use the mock provider).
 
-Now Sterling runs on localhost:8081. If you're running versus Forge, note the instance-provider port and append it to the URL for dev Sterling. E.g., `localhost:8081/?62703` if the provider port is `62703`. In Forge, you can use the `sterling_port` option to set the provider port to something constant, so you can avoid having to edit the Sterling URL every run.
+Now Spytial Sterling runs on localhost:8081. If you're running versus Forge, note the instance-provider port and append it to the URL for dev Spytial Sterling. E.g., `localhost:8081/?62703` if the provider port is `62703`. In Forge, you can use the `sterling_port` option to set the provider port to something constant, so you can avoid having to edit the Spytial Sterling URL every run.
 
 ```
 
@@ -36,7 +38,7 @@ Go to `Manual Datum` near the bottom of the screen and paste in Alloy-style inst
 
 ### Feature flags (provider-driven)
 
-Sterling can hide/show UI features based on capabilities advertised by the provider. The provider may include an optional `features: string[]` field in the meta payload it sends at startup. Example:
+Spytial Sterling can hide/show UI features based on capabilities advertised by the provider. The provider may include an optional `features: string[]` field in the meta payload it sends at startup. Example:
 
 ```json
 {
@@ -60,4 +62,3 @@ To build:
 * `yarn run build:alloy`. 
 
 Building will produce many files in `dist` (there are subfolders). To update Forge, copy these into the `sterling/build` folder, after deleting everything that is already there (including subfolders).
-

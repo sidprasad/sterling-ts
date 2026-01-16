@@ -14,7 +14,7 @@ export const TEXT_close_help_modal = "Close"
 
 /**
  * A modal dialogue box that shows some simple help information on
- * interacting with Sterling in various visualizers.
+ * interacting with Spytial Sterling in various visualizers.
  */
 export function HelpModal({isOpen, onClose}: HelpProps) {  
   const mainView = useSterlingSelector(selectMainView);
@@ -27,7 +27,7 @@ export function HelpModal({isOpen, onClose}: HelpProps) {
       >
         <ModalOverlay />
         <ModalContent maxW="70rem" >
-          <ModalHeader><Center>Using Sterling</Center></ModalHeader>
+          <ModalHeader><Center>Using Spytial Sterling</Center></ModalHeader>
           <ModalCloseButton />
 
           <ModalBody pb={6}>

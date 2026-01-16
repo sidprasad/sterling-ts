@@ -4,7 +4,7 @@ const Logo = (props: CenterProps) => {
   const styles = useStyleConfig('Logo');
   return (
     <Center __css={styles} {...props}>
-      Sterling
+      Spytial Sterling
     </Center>
   );
 };

@@ -1,6 +1,6 @@
 # Release Process
 
-This document describes how to create a new release of Sterling Layout.
+This document describes how to create a new release of Spytial Sterling.
 
 ## Quick Release (Recommended)
 

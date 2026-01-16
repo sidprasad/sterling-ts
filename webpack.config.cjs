@@ -106,7 +106,7 @@ module.exports = (env, argv) => {
         ),
         filename: path.resolve(__dirname, 'dist', 'index.html'),
         inject: true,
-        title: 'Sterling',
+        title: 'Spytial Sterling',
         meta: {
           viewport: 'width=device-width, initial-scale=1',
           'theme-color': '#ffffff',

@@ -10,11 +10,8 @@ import {
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
+import type { LayoutState } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
-
-// Type for node positions - matches SpyTialGraph
-type NodePositionEntry = { id: string; x: number; y: number };
-type NodePositions = NodePositionEntry[] | Record<string, { x: number; y: number }>;
 
 const GraphView = () => {
   const dispatch = useSterlingDispatch();
@@ -30,13 +27,13 @@ const GraphView = () => {
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
   const currentStep = useSterlingSelector(selectSynthesisStep);
 
-  // Store node positions for temporal trace continuity
-  // We use a ref to avoid re-renders when positions change
-  const nodePositionsRef = useRef<NodePositions>({});
+  // Store layout state for temporal trace continuity
+  // We use a ref to avoid re-renders when state changes
+  const layoutStateRef = useRef<LayoutState | undefined>(undefined);
 
-  // Callback to update stored positions after each render
-  const handleNodePositionsChange = useCallback((positions: NodePositions) => {
-    nodePositionsRef.current = positions;
+  // Callback to update stored layout state after each render
+  const handleLayoutStateChange = useCallback((state: LayoutState) => {
+    layoutStateRef.current = state;
   }, []);
 
   // Callback to receive the AlloyDataInstance for synthesis
@@ -59,8 +56,8 @@ const GraphView = () => {
                 datum={datum} 
                 cndSpec={cndSpec}
                 timeIndex={timeIndex}
-                priorPositions={nodePositionsRef.current}
-                onNodePositionsChange={handleNodePositionsChange}
+                priorState={layoutStateRef.current}
+                onLayoutStateChange={handleLayoutStateChange}
                 synthesisMode={isSynthesisActive && currentStep > 0}
                 onDataInstanceCreated={handleDataInstanceCreated}
               />

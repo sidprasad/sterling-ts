@@ -1,6 +1,21 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// LayoutState bundles positions and transform together for temporal continuity
+// These types match the spytial-core webcola-cnd-graph component API
+export interface TransformInfo {
+  k: number;  // scale
+  x: number;  // translate x
+  y: number;  // translate y
+}
+
+export type NodePositionHint = { id: string; x: number; y: number };
+
+export interface LayoutState {
+  positions: NodePositionHint[];
+  transform: TransformInfo;
+}
+
 // Declare the global CndCore type
 declare global {
   interface Window {
@@ -10,7 +25,7 @@ declare global {
       };
       AlloyDataInstance: new (instance: any) => any;
       SGraphQueryEvaluator: new () => {
-        initialize: (context: { sourceData: any }) => void; // sourceData should be IDataInstance (AlloyDataInstance)
+        initialize: (context: { sourceData: any }) => void;
         evaluate: (expression: string, config?: any) => any;
       };
       parseLayoutSpec: (spec: string) => any;
@@ -65,12 +80,12 @@ declare global {
   }
 }
 
-// Extend HTMLElementTagNameMap for the custom element
+// Extend HTMLElementTagNameMap for the webcola-cnd-graph custom element
 declare global {
   interface HTMLElementTagNameMap {
     'webcola-cnd-graph': HTMLElement & {
-      renderLayout: (layout: any, options?: { priorPositions?: NodePositions }) => Promise<void>;
-      getNodePositions?: () => NodePositions;
+      renderLayout: (layout: any, options?: { priorState?: LayoutState }) => Promise<void>;
+      getLayoutState?: () => LayoutState;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
       // Node highlighting for synthesis mode
@@ -81,20 +96,15 @@ declare global {
   }
 }
 
-// Type for node positions used in temporal trace continuity
-// Can be either an array of {id, x, y} or a Record<nodeId, {x, y}>
-type NodePositionEntry = { id: string; x: number; y: number };
-type NodePositions = NodePositionEntry[] | Record<string, { x: number; y: number }>;
-
 interface SpyTialGraphProps {
   datum: DatumParsed<any>;
   cndSpec: string;
   /** Index of the current time step in a temporal trace */
   timeIndex?: number;
-  /** Callback to share node positions with parent for cross-frame continuity */
-  onNodePositionsChange?: (positions: NodePositions) => void;
-  /** Prior node positions from previous frame for temporal continuity */
-  priorPositions?: NodePositions;
+  /** Callback to share layout state with parent for cross-frame continuity */
+  onLayoutStateChange?: (state: LayoutState) => void;
+  /** Prior layout state from previous frame for temporal continuity */
+  priorState?: LayoutState;
   onCndSpecChange?: (spec: string) => void;
   /** Synthesis mode: enable node selection */
   synthesisMode?: boolean;
@@ -107,8 +117,8 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     datum, 
     cndSpec, 
     timeIndex, 
-    priorPositions, 
-    onNodePositionsChange,
+    priorState, 
+    onLayoutStateChange,
     synthesisMode = false,
     onDataInstanceCreated
   } = props;
@@ -121,17 +131,17 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   const layoutRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
   
-  // Use a ref to store the latest onNodePositionsChange callback
+  // Use a ref to store the latest onLayoutStateChange callback
   // This avoids stale closure issues in event listeners
-  const onNodePositionsChangeRef = useRef(onNodePositionsChange);
-  onNodePositionsChangeRef.current = onNodePositionsChange;
+  const onLayoutStateChangeRef = useRef(onLayoutStateChange);
+  onLayoutStateChangeRef.current = onLayoutStateChange;
 
   // Poll for CndCore availability if not ready yet
   useEffect(() => {
     if (isCndCoreReady) return;
 
     const checkCndCore = () => {
-      if (typeof window.CndCore !== 'undefined' && window.CndCore.parseLayoutSpec) {
+      if (window.CndCore?.parseLayoutSpec) {
         console.log('CndCore is now available');
         setIsCndCoreReady(true);
         return true;
@@ -298,36 +308,26 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Store the layout for reset functionality
       layoutRef.current = layoutResult.layout;
 
-      // Step 7: Render the layout with prior positions for temporal continuity
+      // Step 7: Render the layout with prior state for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
         // Log the nodes in the new layout
         const newLayoutNodeIds = layoutResult.layout.nodes?.map((n: any) => n.id || n.name || n.label) || [];
         //console.log('Nodes in new layout:', newLayoutNodeIds);
         
-        // Check if we have prior positions to use
-        const hasPriorPositions = priorPositions && (
-          Array.isArray(priorPositions) ? priorPositions.length > 0 : Object.keys(priorPositions).length > 0
-        );
-        const renderOptions = hasPriorPositions ? { priorPositions } : undefined;
+        // Check if we have prior state to use
+        const hasPriorState = priorState && priorState.positions && priorState.positions.length > 0;
+        const renderOptions = hasPriorState ? { priorState } : undefined;
         
         // Debug: Check which prior position IDs match new layout node IDs
-        if (hasPriorPositions && priorPositions) {
-          const priorIds = Array.isArray(priorPositions) 
-            ? priorPositions.map((p: NodePositionEntry) => p.id)
-            : Object.keys(priorPositions);
+        if (hasPriorState && priorState) {
+          const priorIds = priorState.positions.map((p: NodePositionHint) => p.id);
           const matchingIds = priorIds.filter((id: string) => newLayoutNodeIds.includes(id));
           // console.log('Prior position IDs:', priorIds);
           // console.log('Matching IDs between prior positions and new layout:', matchingIds);
           // console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
-          
-          // Show actual position values for matching nodes
-          if (Array.isArray(priorPositions)) {
-            const matchingPositions = priorPositions.filter((p: NodePositionEntry) => newLayoutNodeIds.includes(p.id));
-            //console.log('Prior positions for matching nodes:', matchingPositions);
-          }
         }
         
-        //console.log('Rendering with prior positions:', hasPriorPositions ? (Array.isArray(priorPositions) ? priorPositions.length : Object.keys(priorPositions!).length) + ' nodes' : 'none');
+        //console.log('Rendering with prior state:', hasPriorState ? priorState.positions.length + ' nodes' : 'none');
         
         // Render - the layout-complete event will capture final positions
         await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
@@ -339,7 +339,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorPositions]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorState]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
@@ -357,42 +357,40 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       display: block;
     `;
 
-    // Listen for layout-complete event to capture FINAL positions after WebCola constraints
+    // Listen for layout-complete event to capture FINAL layout state after WebCola constraints
     // This is crucial for temporal consistency - we want positions AFTER constraints are applied
     const handleLayoutComplete = (e: CustomEvent) => {
-      const detail = e.detail;
-      //console.log('Layout complete! Capturing final positions for temporal consistency.');
+      //console.log('Layout complete! Capturing final layout state for temporal consistency.');
       
-      if (detail.nodePositions && detail.nodePositions.length > 0) {
-        // console.log(`Captured ${detail.nodePositions.length} final node positions from layout-complete event`);
-        // // Log a few for debugging
-        // detail.nodePositions.slice(0, 3).forEach((p: NodePositionEntry) => {
-        //   console.log(`  ${p.id}: x=${p.x.toFixed(2)}, y=${p.y.toFixed(2)}`);
-        // });
-        
-        // Call the callback with the captured positions
-        if (onNodePositionsChangeRef.current) {
-          onNodePositionsChangeRef.current(detail.nodePositions);
+      // Use getLayoutState() to get complete state (positions + transform)
+      if (graphElementRef.current?.getLayoutState && onLayoutStateChangeRef.current) {
+        const layoutState = graphElementRef.current.getLayoutState();
+        if (layoutState && layoutState.positions && layoutState.positions.length > 0) {
+          // console.log(`Captured layout state: ${layoutState.positions.length} positions, transform: k=${layoutState.transform.k.toFixed(2)}`);
+          onLayoutStateChangeRef.current(layoutState);
         }
       }
     };
 
-    // Listen for node drag end to update positions
+    // Listen for node drag end to update layout state
     const handleNodeDragEnd = (e: CustomEvent) => {
-      const detail = e.detail;
-      if (detail.nodePositions && detail.nodePositions.length > 0) {
-        //console.log(`Node drag ended, updating ${detail.nodePositions.length} positions`);
-        if (onNodePositionsChangeRef.current) {
-          onNodePositionsChangeRef.current(detail.nodePositions);
+      //console.log('Node drag ended, updating layout state');
+      if (graphElementRef.current?.getLayoutState && onLayoutStateChangeRef.current) {
+        const layoutState = graphElementRef.current.getLayoutState();
+        if (layoutState && layoutState.positions && layoutState.positions.length > 0) {
+          onLayoutStateChangeRef.current(layoutState);
         }
       }
     };
 
-    // Listen for viewBox changes (zoom/pan) to preserve across instances
+    // Listen for viewBox changes (zoom/pan) to update layout state
     const handleViewBoxChange = (e: CustomEvent) => {
-      const detail = e.detail;
-      if (detail.viewBox) {
-        viewBoxRef.current = detail.viewBox;
+      // When zoom/pan changes, update the full layout state (which includes transform)
+      if (graphElementRef.current?.getLayoutState && onLayoutStateChangeRef.current) {
+        const layoutState = graphElementRef.current.getLayoutState();
+        if (layoutState && layoutState.positions && layoutState.positions.length > 0) {
+          onLayoutStateChangeRef.current(layoutState);
+        }
       }
     };
 

@@ -5,36 +5,7 @@ import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
 import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
 import { RiHammerFill } from 'react-icons/ri';
 import { Icon } from '@chakra-ui/react';
-
-// Declare the window functions from SpyTial's react-component-integration
-declare global {
-  interface Window {
-    mountCndLayoutInterface?: (elementId?: string, options?: CndLayoutInterfaceOptions) => void;
-    getCurrentCNDSpecFromReact?: () => string;
-    // Error display functions from SpyTial
-    mountErrorMessageModal?: (elementId?: string) => void;
-    showParseError?: (message: string, context: string) => void;
-    showGeneralError?: (message: string) => void;
-    clearAllErrors?: () => void;
-    // Projection control functions
-    mountProjectionControls?: (elementId: string, onChangeCallback: (type: string, atomId: string) => void) => void;
-    updateProjectionData?: (projectionData: any[]) => void;
-    // Store current projections globally (similar to webcola-demo.html)
-    currentProjections?: Record<string, string>;
-  }
-}
-
-// Options for mounting the CnD Layout Interface
-interface CndLayoutInterfaceOptions {
-  initialYamlValue?: string;
-  initialIsNoCodeView?: boolean;
-  initialConstraints?: any[];
-  initialDirectives?: CndDirective[];
-}
-
-interface CndDirective {
-  flag: string;
-}
+// CndCore types are declared in ../../types/cndcore.d.ts
 
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();

@@ -9,13 +9,7 @@ import { AppSideBar } from './AppSideBar/AppSideBar';
 import { AppStage } from './AppStage/AppStage';
 import { AppStatusBar } from './AppStatusBar/AppStatusBar';
 import { defaultPreferences } from '../preferences';
-
-// Declare the window functions from SpyTial's react-component-integration
-declare global {
-  interface Window {
-    mountErrorMessageModal?: (elementId?: string) => void;
-  }
-}
+// CndCore types are declared in ../types/cndcore.d.ts
 
 interface SterlingProps {
   url?: string;

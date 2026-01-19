@@ -2,13 +2,7 @@ import { dataReceived } from '@/sterling-connection';
 import { Middleware } from '@reduxjs/toolkit';
 import { SterlingState } from '../state/store';
 import { synthesisInstancesLoaded } from '../state/synthesis/synthesisSlice';
-
-// Declare CndCore global
-declare global {
-  interface Window {
-    CndCore?: any;
-  }
-}
+// CndCore types are declared in ../types/cndcore.d.ts
 
 /**
  * Middleware to handle synthesis instance loading from Forge/Alloy

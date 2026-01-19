@@ -31,8 +31,8 @@ export interface GraphsState {
   themeByGeneratorName: Record<string, SterlingTheme>;
   timeByDatumId: Record<string, number>;
 
-  /** The CnD spec loaded, if any.  */
-  cndSpecByDatumId: Record<string, string>;
+  /** The CnD spec by generator name, so layouts persist across instances */
+  cndSpecByGeneratorName: Record<string, string>;
 
   // TODO: Refactor this
   hiddenByDatumId: Record<string, Record<string, string[]>>;
@@ -82,7 +82,7 @@ export function newGraphsState(): GraphsState {
     themeByGeneratorName: {},
     timeByDatumId: {},
     hiddenByDatumId: {},
-    cndSpecByDatumId: {}
+    cndSpecByGeneratorName: {}
   };
 }
 

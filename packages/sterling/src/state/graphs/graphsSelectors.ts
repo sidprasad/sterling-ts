@@ -76,13 +76,15 @@ function selectZoomMatrix(
 
 /**
  * Select the pre-loaded CnD diagram spec, if any.
- * If no spec is defined, the value with be the empty string.
+ * Uses generator name so layouts persist across instances.
+ * If no spec is defined, the value will be the empty string.
  */
 function selectCnDSpec(
   state: GraphsState,
   datum: DatumParsed<any>
 ): string {
-  return state.cndSpecByDatumId[datum.id]
+  const generator = datum.generatorName ?? '';
+  return state.cndSpecByGeneratorName[generator] ?? '';
 }
 
 

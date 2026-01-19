@@ -43,10 +43,13 @@ function dataReceived(
       // Choose the first index as the first instance to display
       state.timeByDatumId[datumId] = 0;
 
-      // If a CnD spec is present, load it into the state.
-      // Otherwise, use the default directive to hide disconnected built-ins.
+      // If a CnD spec is present in the datum AND we don't already have one for this generator,
+      // load it into the state. Otherwise, use the default directive to hide disconnected built-ins.
+      // Using generator name allows the layout to persist across instances.
       const DEFAULT_CND_SPEC = 'directives:\n  - flag: hideDisconnectedBuiltIns';
-      state.cndSpecByDatumId[datumId] = alloyDatum.parsed.visualizerConfig?.cnd ?? DEFAULT_CND_SPEC;
+      if (!(generator in state.cndSpecByGeneratorName)) {
+        state.cndSpecByGeneratorName[generator] = alloyDatum.parsed.visualizerConfig?.cnd ?? DEFAULT_CND_SPEC;
+      }
 
       // TODO: Remove during refactor
       state.hiddenByDatumId[datumId] = {};

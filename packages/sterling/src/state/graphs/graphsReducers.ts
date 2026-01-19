@@ -690,14 +690,15 @@ function timeIndexSet(
 }
 
 /**
- * Set the CnD spec for a datum.
+ * Set the CnD spec for a generator (by generator name, so it persists across instances).
  */
 function cndSpecSet(
   state: DraftState,
   action: PayloadAction<{ datum: DatumParsed<any>; spec: string }>
 ) {
   const { datum, spec } = action.payload;
-  state.cndSpecByDatumId[datum.id] = spec;
+  const generator = datum.generatorName ?? '';
+  state.cndSpecByGeneratorName[generator] = spec;
 }
 
 function getEdgeStyleSpecUnique(

@@ -17,6 +17,8 @@ interface MultiProjectionGraphProps {
   timeIndex?: number;
   /** The type to project over (e.g., "State", "Time") */
   projectionType: string;
+  /** The atom IDs to show (from multi-select) */
+  selectedAtoms: string[];
 }
 
 interface SingleProjectionPaneProps {
@@ -41,6 +43,9 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const isInitializedRef = useRef(false);
   const layoutRef = useRef<any>(null);
+  
+  // Debug logging
+  console.log(`[SingleProjectionPane] projectionType=${projectionType}, atomId=${atomId}, atomLabel=${atomLabel}`);
 
   /**
    * Load and render the graph using SpyTial/CnD
@@ -97,8 +102,9 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       );
 
       // Generate layout with THIS specific projection
-      const projections = { [projectionType]: atomId };
-      console.log(`[Projection ${atomLabel}] Using projections:`, projections);
+      // projectionType should be the type ID (e.g., "Position") that SpyTial expects
+      const projections = projectionType ? { [projectionType]: atomId } : {};
+      console.log(`[SingleProjectionPane ${atomLabel}] Generating with projection:`, projectionType, '->', atomId, 'Full projections:', projections);
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
 
       if (layoutResult.error) {
@@ -201,10 +207,13 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 };
 
 /**
- * Component that renders multiple graphs in a grid, one for each projection value
+ * Component that renders multiple graphs in a grid, one for each selected projection value
  */
 const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
-  const { datum, cndSpec, timeIndex, projectionType } = props;
+  const { datum, cndSpec, timeIndex, projectionType, selectedAtoms } = props;
+  
+  // Debug logging for props
+  console.log('[MultiProjectionGraph] Props:', { projectionType, selectedAtoms, datumId: datum?.id });
   
   const [projectionData, setProjectionData] = useState<ProjectionData[]>([]);
   const [isCndCoreReady, setIsCndCoreReady] = useState(typeof window !== 'undefined' && typeof window.CndCore !== 'undefined');
@@ -239,7 +248,7 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     return () => clearInterval(intervalId);
   }, [isCndCoreReady]);
 
-  // Extract projection data from the datum
+  // Extract projection data from the datum to get atom labels
   useEffect(() => {
     if (!isCndCoreReady || !datum.data) return;
 
@@ -273,20 +282,34 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     }
   }, [datum.data, timeIndex, isCndCoreReady]);
 
-  // Find the atoms for the selected projection type
-  const projectionAtoms = useMemo(() => {
+  // Get the atoms to render - only the selected ones, with their labels
+  const atomsToRender = useMemo(() => {
+    // Find the projection type data to get labels
     const typeData = projectionData.find(p => p.typeId === projectionType || p.typeName === projectionType);
-    return typeData?.atoms || [];
-  }, [projectionData, projectionType]);
+    console.log('[MultiProjectionGraph] Looking for typeData:', { projectionType, found: typeData, allTypes: projectionData.map(p => ({ typeId: p.typeId, typeName: p.typeName })) });
+    const allAtoms = typeData?.atoms || [];
+    
+    // Create a map for quick lookup
+    const atomMap = new Map(allAtoms.map(a => [a.id, a]));
+    
+    // Return selected atoms with their labels (fallback to atomId if no match)
+    return selectedAtoms.map(atomId => {
+      const atomData = atomMap.get(atomId);
+      return {
+        id: atomId,
+        label: atomData?.label || atomId  // Use atomId as label if not found
+      };
+    });
+  }, [projectionData, projectionType, selectedAtoms]);
 
   // Calculate grid columns based on number of projections
   const gridCols = useMemo(() => {
-    const count = projectionAtoms.length;
-    if (count <= 2) return 2;
+    const count = atomsToRender.length;
+    if (count <= 2) return count;
     if (count <= 4) return 2;
     if (count <= 6) return 3;
     return 4;
-  }, [projectionAtoms.length]);
+  }, [atomsToRender.length]);
 
   if (error) {
     return (
@@ -306,19 +329,21 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     );
   }
 
-  if (projectionAtoms.length === 0) {
+  if (atomsToRender.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-4">
         <div className="text-gray-600 bg-gray-50 p-4 rounded-lg">
-          No atoms found for projection type "{projectionType}". 
-          <br />
-          <span className="text-sm text-gray-500">
-            Available types: {projectionData.map(p => p.typeName || p.typeId).join(', ') || 'None'}
-          </span>
+          No atoms selected for projection type "{projectionType}".
         </div>
       </div>
     );
   }
+
+  // Get the type name for display (prefer typeName over typeId)
+  const displayTypeName = useMemo(() => {
+    const typeData = projectionData.find(p => p.typeId === projectionType || p.typeName === projectionType);
+    return typeData?.typeName || projectionType || 'Unknown';
+  }, [projectionData, projectionType]);
 
   return (
     <div 
@@ -326,10 +351,10 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     >
       <div className="mb-4 px-2">
         <h2 className="text-lg font-semibold text-gray-800">
-          All Projections over {projectionType}
+          Projections over {displayTypeName}
         </h2>
         <p className="text-sm text-gray-600">
-          Showing {projectionAtoms.length} projection{projectionAtoms.length !== 1 ? 's' : ''}
+          Showing {atomsToRender.length} selected projection{atomsToRender.length !== 1 ? 's' : ''}
         </p>
       </div>
       
@@ -339,7 +364,7 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
           gridTemplateColumns: `repeat(${gridCols}, minmax(300px, 1fr))`,
         }}
       >
-        {projectionAtoms.map((atom, index) => (
+        {atomsToRender.map((atom, index) => (
           <SingleProjectionPane
             key={atom.id}
             datum={datum}
@@ -347,7 +372,7 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
             timeIndex={timeIndex}
             projectionType={projectionType}
             atomId={atom.id}
-            atomLabel={atom.label || atom.id}
+            atomLabel={atom.label}
             index={index}
           />
         ))}

@@ -88,21 +88,22 @@ function selectCnDSpec(
 }
 
 /**
- * Select multi-projection settings for a datum.
+ * Select the selected projection atoms for a datum.
+ * Returns a record mapping projection type to array of selected atom IDs.
  */
-function selectMultiProjectionSettings(
+function selectSelectedProjections(
   state: GraphsState,
   datum: DatumParsed<any>
-): { enabled: boolean; projectionType?: string } {
+): Record<string, string[]> {
   const generator = datum.generatorName ?? '';
-  return state.multiProjectionByGeneratorName[generator] ?? { enabled: false };
+  return state.selectedProjectionsByGeneratorName[generator] ?? {};
 }
 
 export default {
   selectGraphLayout,
   selectHiddenRelations,
-  selectMultiProjectionSettings,
   selectProjections,
+  selectSelectedProjections,
   selectSpreadMatrix,
   selectTheme,
   selectTimeIndex,

@@ -559,35 +559,57 @@ function projectionSet(
 }
 
 /**
- * Enable or disable multi-projection view for a datum.
+ * Set the selected projections for a type (for multi-projection view).
+ * This allows selecting multiple atoms for a projection type.
  */
-function multiProjectionEnabledSet(
+function selectedProjectionsSet(
   state: DraftState,
-  action: PayloadAction<{ datum: DatumParsed<any>; enabled: boolean }>
+  action: PayloadAction<{ 
+    datum: DatumParsed<any>; 
+    projectionType: string;
+    selectedAtoms: string[];
+  }>
 ) {
-  const { datum, enabled } = action.payload;
+  const { datum, projectionType, selectedAtoms } = action.payload;
   const generatorName = datum.generatorName ?? '';
   
-  if (!state.multiProjectionByGeneratorName[generatorName]) {
-    state.multiProjectionByGeneratorName[generatorName] = { enabled: false };
+  if (!state.selectedProjectionsByGeneratorName[generatorName]) {
+    state.selectedProjectionsByGeneratorName[generatorName] = {};
   }
-  state.multiProjectionByGeneratorName[generatorName].enabled = enabled;
+  state.selectedProjectionsByGeneratorName[generatorName][projectionType] = selectedAtoms;
 }
 
 /**
- * Set the projection type to show all projections for.
+ * Toggle a single projection atom selection for a type.
  */
-function multiProjectionTypeSet(
+function projectionAtomToggled(
   state: DraftState,
-  action: PayloadAction<{ datum: DatumParsed<any>; projectionType: string }>
+  action: PayloadAction<{ 
+    datum: DatumParsed<any>; 
+    projectionType: string;
+    atomId: string;
+  }>
 ) {
-  const { datum, projectionType } = action.payload;
+  const { datum, projectionType, atomId } = action.payload;
   const generatorName = datum.generatorName ?? '';
   
-  if (!state.multiProjectionByGeneratorName[generatorName]) {
-    state.multiProjectionByGeneratorName[generatorName] = { enabled: false };
+  if (!state.selectedProjectionsByGeneratorName[generatorName]) {
+    state.selectedProjectionsByGeneratorName[generatorName] = {};
   }
-  state.multiProjectionByGeneratorName[generatorName].projectionType = projectionType;
+  if (!state.selectedProjectionsByGeneratorName[generatorName][projectionType]) {
+    state.selectedProjectionsByGeneratorName[generatorName][projectionType] = [];
+  }
+  
+  const currentSelections = state.selectedProjectionsByGeneratorName[generatorName][projectionType];
+  const index = currentSelections.indexOf(atomId);
+  
+  if (index === -1) {
+    // Add the atom
+    currentSelections.push(atomId);
+  } else {
+    // Remove the atom
+    currentSelections.splice(index, 1);
+  }
 }
 
 function shapeRemoved(
@@ -828,18 +850,18 @@ export default {
   graphSpread,
   graphZoomed,
   hiddenRelationAdded,
-  multiProjectionEnabledSet,
-  multiProjectionTypeSet,
   nodeLabelPropRemoved,
   nodeLabelPropSet,
   nodeLabelStyleRemoved,
   nodeLabelStyleSet,
   nodesOffset,
   projectionAdded,
+  projectionAtomToggled,
   projectionOrderingSet,
   projectionRemoved,
   projectionSet,
   saveThemeRequested,
+  selectedProjectionsSet,
   shapeRemoved,
   shapeSet,
   shapeStyleRemoved,

@@ -641,13 +641,14 @@ export function selectCnDSpec(
 }
 
 /**
- * Select multi-projection view settings for a datum.
+ * Select the selected projections for multi-projection view.
+ * Returns a record mapping projection type to array of selected atom IDs.
  */
-export function selectMultiProjectionSettings(
+export function selectSelectedProjections(
   state: SterlingState,
   datum: DatumParsed<any>
-): { enabled: boolean; projectionType?: string } {
-  return graphsSelectors.selectMultiProjectionSettings(state.graphs, datum);
+): Record<string, string[]> {
+  return graphsSelectors.selectSelectedProjections(state.graphs, datum);
 }
 
 /**

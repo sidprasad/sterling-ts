@@ -1,5 +1,5 @@
 import { Pane, PaneBody, PaneHeader } from '@/sterling-ui';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { 
   selectActiveDatum, 
@@ -7,7 +7,7 @@ import {
   selectTimeIndex,
   selectIsSynthesisActive,
   selectSynthesisStep,
-  selectMultiProjectionSettings
+  selectSelectedProjections
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
@@ -25,10 +25,24 @@ const GraphView = () => {
     datum ? selectTimeIndex(state, datum) : 0
   );
   
-  // Multi-projection mode state
-  const multiProjectionSettings = useSterlingSelector((state) =>
-    datum ? selectMultiProjectionSettings(state, datum) : { enabled: false }
+  // Selected projections for multi-graph view
+  const selectedProjections = useSterlingSelector((state) =>
+    datum ? selectSelectedProjections(state, datum) : {}
   );
+  
+  // Calculate total number of graphs to show
+  // For now, we use the first projection type that has multiple selections
+  const multiProjectionInfo = useMemo(() => {
+    console.log('[GraphView] selectedProjections:', selectedProjections);
+    for (const [typeId, atoms] of Object.entries(selectedProjections)) {
+      console.log(`[GraphView] Checking typeId="${typeId}", atoms:`, atoms);
+      if (atoms.length > 1) {
+        console.log(`[GraphView] Found multi-projection: typeId="${typeId}" with ${atoms.length} atoms`);
+        return { typeId, atoms };
+      }
+    }
+    return null;
+  }, [selectedProjections]);
   
   // Synthesis mode state
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
@@ -50,23 +64,23 @@ const GraphView = () => {
     }
   }, [dispatch, isSynthesisActive]);
 
-  // Determine which graph component to render
+  // Determine if we should show multiple graphs
   const shouldShowMultiProjection = 
-    multiProjectionSettings.enabled && 
-    multiProjectionSettings.projectionType &&
+    multiProjectionInfo !== null &&
     !isSynthesisActive;  // Don't show multi-projection in synthesis mode
 
   // Render the appropriate graph component
   const renderGraphContent = () => {
     if (!datum) return null;
     
-    if (shouldShowMultiProjection) {
+    if (shouldShowMultiProjection && multiProjectionInfo) {
       return (
         <MultiProjectionGraph
           datum={datum}
           cndSpec={cndSpec}
           timeIndex={timeIndex}
-          projectionType={multiProjectionSettings.projectionType!}
+          projectionType={multiProjectionInfo.typeId}
+          selectedAtoms={multiProjectionInfo.atoms}
         />
       );
     }

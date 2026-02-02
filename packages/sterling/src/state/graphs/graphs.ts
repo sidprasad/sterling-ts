@@ -36,6 +36,14 @@ export interface GraphsState {
 
   // TODO: Refactor this
   hiddenByDatumId: Record<string, Record<string, string[]>>;
+  
+  /** Multi-projection view settings by generator name */
+  multiProjectionByGeneratorName: Record<string, {
+    /** Whether multi-projection view is enabled */
+    enabled: boolean;
+    /** The type to show all projections for (e.g., "State", "Time") */
+    projectionType?: string;
+  }>;
 }
 
 export interface GraphData {
@@ -82,7 +90,8 @@ export function newGraphsState(): GraphsState {
     themeByGeneratorName: {},
     timeByDatumId: {},
     hiddenByDatumId: {},
-    cndSpecByGeneratorName: {}
+    cndSpecByGeneratorName: {},
+    multiProjectionByGeneratorName: {}
   };
 }
 

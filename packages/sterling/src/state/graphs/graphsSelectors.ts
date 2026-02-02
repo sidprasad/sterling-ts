@@ -87,10 +87,21 @@ function selectCnDSpec(
   return state.cndSpecByGeneratorName[generator] ?? '';
 }
 
+/**
+ * Select multi-projection settings for a datum.
+ */
+function selectMultiProjectionSettings(
+  state: GraphsState,
+  datum: DatumParsed<any>
+): { enabled: boolean; projectionType?: string } {
+  const generator = datum.generatorName ?? '';
+  return state.multiProjectionByGeneratorName[generator] ?? { enabled: false };
+}
 
 export default {
   selectGraphLayout,
   selectHiddenRelations,
+  selectMultiProjectionSettings,
   selectProjections,
   selectSpreadMatrix,
   selectTheme,

@@ -641,6 +641,16 @@ export function selectCnDSpec(
 }
 
 /**
+ * Select multi-projection view settings for a datum.
+ */
+export function selectMultiProjectionSettings(
+  state: SterlingState,
+  datum: DatumParsed<any>
+): { enabled: boolean; projectionType?: string } {
+  return graphsSelectors.selectMultiProjectionSettings(state.graphs, datum);
+}
+
+/**
  * Synthesis mode selectors
  */
 export function selectIsSynthesisEnabled(state: SterlingState): boolean {

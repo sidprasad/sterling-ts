@@ -28,6 +28,8 @@ export const {
   graphSpread,
   graphZoomed,
   hiddenRelationAdded,
+  multiProjectionEnabledSet,
+  multiProjectionTypeSet,
   nodeLabelStyleRemoved,
   nodeLabelStyleSet,
   nodeLabelPropRemoved,

@@ -1,10 +1,10 @@
 import { PaneTitle } from '@/sterling-ui';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
-import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
+import { selectActiveDatum, selectCnDSpec, selectMultiProjectionSettings, selectProjectableTypes } from '../../../../state/selectors';
+import { cndSpecSet, multiProjectionEnabledSet, multiProjectionTypeSet } from '../../../../state/graphs/graphsSlice';
 import { RiHammerFill } from 'react-icons/ri';
-import { Icon } from '@chakra-ui/react';
+import { Icon, Switch, Select } from '@chakra-ui/react';
 // CndCore types are declared in ../../types/cndcore.d.ts
 
 const GraphLayoutDrawer = () => {
@@ -20,6 +20,35 @@ const GraphLayoutDrawer = () => {
   
   /** Load from XML (if provided) once. */
   const preloadedSpec = useSterlingSelector((state) => datum ? selectCnDSpec(state, datum) : undefined);
+  
+  /** Multi-projection settings */
+  const multiProjectionSettings = useSterlingSelector((state) => 
+    datum ? selectMultiProjectionSettings(state, datum) : { enabled: false }
+  );
+  const projectableTypes = useSterlingSelector((state) =>
+    datum ? selectProjectableTypes(state, datum) : {}
+  );
+  
+  // Get available projection types
+  const availableTypes = useMemo(() => Object.keys(projectableTypes), [projectableTypes]);
+  
+  // Handler for multi-projection toggle
+  const handleMultiProjectionToggle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (datum) {
+      dispatch(multiProjectionEnabledSet({ datum, enabled: e.target.checked }));
+      // If enabling and no type is selected, default to first available type
+      if (e.target.checked && !multiProjectionSettings.projectionType && availableTypes.length > 0) {
+        dispatch(multiProjectionTypeSet({ datum, projectionType: availableTypes[0] }));
+      }
+    }
+  }, [datum, dispatch, multiProjectionSettings.projectionType, availableTypes]);
+  
+  // Handler for projection type selection
+  const handleProjectionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (datum) {
+      dispatch(multiProjectionTypeSet({ datum, projectionType: e.target.value }));
+    }
+  }, [datum, dispatch]);
   
   // Reset projections when datum changes
   useEffect(() => {
@@ -180,6 +209,38 @@ const GraphLayoutDrawer = () => {
       />
 
       <div className="flex-1 space-y-3 p-3">
+        {/* Multi-Projection View Toggle */}
+        {availableTypes.length > 0 && (
+          <div className="rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Show All Projections</span>
+              <Switch
+                isChecked={multiProjectionSettings.enabled}
+                onChange={handleMultiProjectionToggle}
+                colorScheme="indigo"
+                size="sm"
+              />
+            </div>
+            {multiProjectionSettings.enabled && (
+              <div className="mt-2">
+                <label className="block text-xs text-gray-500 mb-1">Projection Type:</label>
+                <select
+                  value={multiProjectionSettings.projectionType || ''}
+                  onChange={handleProjectionTypeChange}
+                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  {availableTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Display a grid showing all atoms of the selected type as separate graphs.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Projection Controls */}
         <div
           id="layout-projection-mount"

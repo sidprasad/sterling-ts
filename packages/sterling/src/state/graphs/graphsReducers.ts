@@ -558,6 +558,38 @@ function projectionSet(
   validateLayouts(state, datum);
 }
 
+/**
+ * Enable or disable multi-projection view for a datum.
+ */
+function multiProjectionEnabledSet(
+  state: DraftState,
+  action: PayloadAction<{ datum: DatumParsed<any>; enabled: boolean }>
+) {
+  const { datum, enabled } = action.payload;
+  const generatorName = datum.generatorName ?? '';
+  
+  if (!state.multiProjectionByGeneratorName[generatorName]) {
+    state.multiProjectionByGeneratorName[generatorName] = { enabled: false };
+  }
+  state.multiProjectionByGeneratorName[generatorName].enabled = enabled;
+}
+
+/**
+ * Set the projection type to show all projections for.
+ */
+function multiProjectionTypeSet(
+  state: DraftState,
+  action: PayloadAction<{ datum: DatumParsed<any>; projectionType: string }>
+) {
+  const { datum, projectionType } = action.payload;
+  const generatorName = datum.generatorName ?? '';
+  
+  if (!state.multiProjectionByGeneratorName[generatorName]) {
+    state.multiProjectionByGeneratorName[generatorName] = { enabled: false };
+  }
+  state.multiProjectionByGeneratorName[generatorName].projectionType = projectionType;
+}
+
 function shapeRemoved(
   state: DraftState,
   action: PayloadAction<{ datum: DatumParsed<any>; type: string }>
@@ -796,6 +828,8 @@ export default {
   graphSpread,
   graphZoomed,
   hiddenRelationAdded,
+  multiProjectionEnabledSet,
+  multiProjectionTypeSet,
   nodeLabelPropRemoved,
   nodeLabelPropSet,
   nodeLabelStyleRemoved,

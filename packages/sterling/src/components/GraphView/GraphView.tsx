@@ -6,10 +6,12 @@ import {
   selectCnDSpec, 
   selectTimeIndex,
   selectIsSynthesisActive,
-  selectSynthesisStep
+  selectSynthesisStep,
+  selectMultiProjectionSettings
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
+import { MultiProjectionGraph } from './MultiProjectionGraph';
 import type { LayoutState } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
 
@@ -21,6 +23,11 @@ const GraphView = () => {
   );
   const timeIndex = useSterlingSelector((state) =>
     datum ? selectTimeIndex(state, datum) : 0
+  );
+  
+  // Multi-projection mode state
+  const multiProjectionSettings = useSterlingSelector((state) =>
+    datum ? selectMultiProjectionSettings(state, datum) : { enabled: false }
   );
   
   // Synthesis mode state
@@ -43,6 +50,40 @@ const GraphView = () => {
     }
   }, [dispatch, isSynthesisActive]);
 
+  // Determine which graph component to render
+  const shouldShowMultiProjection = 
+    multiProjectionSettings.enabled && 
+    multiProjectionSettings.projectionType &&
+    !isSynthesisActive;  // Don't show multi-projection in synthesis mode
+
+  // Render the appropriate graph component
+  const renderGraphContent = () => {
+    if (!datum) return null;
+    
+    if (shouldShowMultiProjection) {
+      return (
+        <MultiProjectionGraph
+          datum={datum}
+          cndSpec={cndSpec}
+          timeIndex={timeIndex}
+          projectionType={multiProjectionSettings.projectionType!}
+        />
+      );
+    }
+    
+    return (
+      <SpyTialGraph 
+        datum={datum} 
+        cndSpec={cndSpec}
+        timeIndex={timeIndex}
+        priorState={layoutStateRef.current}
+        onLayoutStateChange={handleLayoutStateChange}
+        synthesisMode={isSynthesisActive && currentStep > 0}
+        onDataInstanceCreated={handleDataInstanceCreated}
+      />
+    );
+  };
+
   return (
     <Pane className='grid grid-flow-col divide-x divide-dashed'>
       {datum ? (
@@ -52,15 +93,7 @@ const GraphView = () => {
               <GraphViewHeader datum={datum} />
             </PaneHeader>
             <PaneBody>
-              <SpyTialGraph 
-                datum={datum} 
-                cndSpec={cndSpec}
-                timeIndex={timeIndex}
-                priorState={layoutStateRef.current}
-                onLayoutStateChange={handleLayoutStateChange}
-                synthesisMode={isSynthesisActive && currentStep > 0}
-                onDataInstanceCreated={handleDataInstanceCreated}
-              />
+              {renderGraphContent()}
             </PaneBody>
           </Pane>
         </div>

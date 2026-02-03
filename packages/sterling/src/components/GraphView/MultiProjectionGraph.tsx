@@ -170,7 +170,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
   }, [datum.data, cndSpec, timeIndex, loadGraph]);
 
   return (
-    <div className="flex flex-col border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
+    <div className="relative flex flex-col border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
       {/* Header with projection label */}
       <div className="px-3 py-2 bg-gray-100 border-b border-gray-200">
         <span className="font-medium text-sm text-gray-700">{atomLabel}</span>
@@ -179,7 +179,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       {/* Graph container */}
       <div 
         ref={graphContainerRef}
-        className="flex-1 relative"
+        className="flex-1"
         style={{ 
           minHeight: '250px',
           background: 'white'

@@ -152,7 +152,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
   }, [datum.data, cndSpec, timeIndex, loadGraph]);
 
   return (
-    <div className="flex flex-col border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
+    <div className="relative flex flex-col border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
       {/* Header with time step label */}
       <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
         <span className="font-medium text-sm text-blue-800">
@@ -163,7 +163,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
       {/* Graph container */}
       <div 
         ref={graphContainerRef}
-        className="flex-1 relative"
+        className="flex-1"
         style={{ 
           minHeight: '250px',
           background: 'white'

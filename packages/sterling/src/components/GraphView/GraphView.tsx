@@ -7,11 +7,14 @@ import {
   selectTimeIndex,
   selectIsSynthesisActive,
   selectSynthesisStep,
-  selectSelectedProjections
+  selectSelectedProjections,
+  selectSelectedTimeIndices,
+  selectTraceLength
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
 import { MultiProjectionGraph } from './MultiProjectionGraph';
+import { MultiTemporalGraph } from './MultiTemporalGraph';
 import type { LayoutState } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
 
@@ -25,9 +28,19 @@ const GraphView = () => {
     datum ? selectTimeIndex(state, datum) : 0
   );
   
+  // Get trace length for multi-temporal view
+  const traceLength = useSterlingSelector((state) =>
+    datum ? selectTraceLength(state, datum) : 1
+  );
+  
   // Selected projections for multi-graph view
   const selectedProjections = useSterlingSelector((state) =>
     datum ? selectSelectedProjections(state, datum) : {}
+  );
+  
+  // Selected time indices for multi-temporal view
+  const selectedTimeIndices = useSterlingSelector((state) =>
+    datum ? selectSelectedTimeIndices(state, datum) : []
   );
   
   // Calculate total number of graphs to show
@@ -43,6 +56,9 @@ const GraphView = () => {
     }
     return null;
   }, [selectedProjections]);
+  
+  // Check if multi-temporal mode is active (more than 1 time index selected)
+  const isMultiTemporalActive = selectedTimeIndices.length > 1;
   
   // Synthesis mode state
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
@@ -67,11 +83,28 @@ const GraphView = () => {
   // Determine if we should show multiple graphs
   const shouldShowMultiProjection = 
     multiProjectionInfo !== null &&
-    !isSynthesisActive;  // Don't show multi-projection in synthesis mode
+    !isSynthesisActive &&
+    !isMultiTemporalActive;  // Multi-temporal takes precedence
+  
+  const shouldShowMultiTemporal =
+    isMultiTemporalActive &&
+    !isSynthesisActive;  // Don't show multi-temporal in synthesis mode
 
   // Render the appropriate graph component
   const renderGraphContent = () => {
     if (!datum) return null;
+    
+    // Multi-temporal view takes precedence
+    if (shouldShowMultiTemporal) {
+      return (
+        <MultiTemporalGraph
+          datum={datum}
+          cndSpec={cndSpec}
+          selectedTimeIndices={selectedTimeIndices}
+          traceLength={traceLength}
+        />
+      );
+    }
     
     if (shouldShowMultiProjection && multiProjectionInfo) {
       return (

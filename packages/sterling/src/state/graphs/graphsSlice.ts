@@ -39,12 +39,14 @@ export const {
   projectionRemoved,
   projectionSet,
   selectedProjectionsSet,
+  selectedTimeIndicesSet,
   shapeRemoved,
   saveThemeRequested,
   shapeSet,
   shapeStyleRemoved,
   shapeStyleSet,
   themeFileLoaded,
-  timeIndexSet
+  timeIndexSet,
+  timeIndexToggled
 } = graphsSlice.actions;
 export default graphsSlice.reducer;

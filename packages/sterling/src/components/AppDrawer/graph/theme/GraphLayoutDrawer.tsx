@@ -41,8 +41,7 @@ const GraphLayoutDrawer = () => {
       const handler = (data: any[]) => {
         console.log('GraphLayoutDrawer received RAW projection data:', JSON.stringify(data, null, 2));
         
-        // Normalize the data structure - CndCore uses:
-        // { type: "X", projectedAtom: "X0", atoms: ["X0", "X1", "X2"] }
+        // Normalize the data structure - CndCore uses: { type: "X", projectedAtom: "X0", atoms: ["X0", "X1", "X2"] }
         const normalizedData: ProjectionTypeData[] = data.map(typeData => {
           // CndCore uses "type" field for the type name
           const typeName = typeData.type || typeData.typeName || typeData.name || typeData.typeId || '';

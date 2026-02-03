@@ -87,11 +87,23 @@ function selectCnDSpec(
   return state.cndSpecByGeneratorName[generator] ?? '';
 }
 
+/**
+ * Select the selected projection atoms for a datum.
+ * Returns a record mapping projection type to array of selected atom IDs.
+ */
+function selectSelectedProjections(
+  state: GraphsState,
+  datum: DatumParsed<any>
+): Record<string, string[]> {
+  const generator = datum.generatorName ?? '';
+  return state.selectedProjectionsByGeneratorName[generator] ?? {};
+}
 
 export default {
   selectGraphLayout,
   selectHiddenRelations,
   selectProjections,
+  selectSelectedProjections,
   selectSpreadMatrix,
   selectTheme,
   selectTimeIndex,

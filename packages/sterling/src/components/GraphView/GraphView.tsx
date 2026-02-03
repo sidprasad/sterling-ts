@@ -1,15 +1,17 @@
 import { Pane, PaneBody, PaneHeader } from '@/sterling-ui';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { 
   selectActiveDatum, 
   selectCnDSpec, 
   selectTimeIndex,
   selectIsSynthesisActive,
-  selectSynthesisStep
+  selectSynthesisStep,
+  selectSelectedProjections
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { SpyTialGraph } from './SpyTialGraph';
+import { MultiProjectionGraph } from './MultiProjectionGraph';
 import type { LayoutState } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
 
@@ -22,6 +24,25 @@ const GraphView = () => {
   const timeIndex = useSterlingSelector((state) =>
     datum ? selectTimeIndex(state, datum) : 0
   );
+  
+  // Selected projections for multi-graph view
+  const selectedProjections = useSterlingSelector((state) =>
+    datum ? selectSelectedProjections(state, datum) : {}
+  );
+  
+  // Calculate total number of graphs to show
+  // For now, we use the first projection type that has multiple selections
+  const multiProjectionInfo = useMemo(() => {
+    console.log('[GraphView] selectedProjections:', selectedProjections);
+    for (const [typeId, atoms] of Object.entries(selectedProjections)) {
+      console.log(`[GraphView] Checking typeId="${typeId}", atoms:`, atoms);
+      if (atoms.length > 1) {
+        console.log(`[GraphView] Found multi-projection: typeId="${typeId}" with ${atoms.length} atoms`);
+        return { typeId, atoms };
+      }
+    }
+    return null;
+  }, [selectedProjections]);
   
   // Synthesis mode state
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
@@ -43,6 +64,40 @@ const GraphView = () => {
     }
   }, [dispatch, isSynthesisActive]);
 
+  // Determine if we should show multiple graphs
+  const shouldShowMultiProjection = 
+    multiProjectionInfo !== null &&
+    !isSynthesisActive;  // Don't show multi-projection in synthesis mode
+
+  // Render the appropriate graph component
+  const renderGraphContent = () => {
+    if (!datum) return null;
+    
+    if (shouldShowMultiProjection && multiProjectionInfo) {
+      return (
+        <MultiProjectionGraph
+          datum={datum}
+          cndSpec={cndSpec}
+          timeIndex={timeIndex}
+          projectionType={multiProjectionInfo.typeId}
+          selectedAtoms={multiProjectionInfo.atoms}
+        />
+      );
+    }
+    
+    return (
+      <SpyTialGraph 
+        datum={datum} 
+        cndSpec={cndSpec}
+        timeIndex={timeIndex}
+        priorState={layoutStateRef.current}
+        onLayoutStateChange={handleLayoutStateChange}
+        synthesisMode={isSynthesisActive && currentStep > 0}
+        onDataInstanceCreated={handleDataInstanceCreated}
+      />
+    );
+  };
+
   return (
     <Pane className='grid grid-flow-col divide-x divide-dashed'>
       {datum ? (
@@ -52,15 +107,7 @@ const GraphView = () => {
               <GraphViewHeader datum={datum} />
             </PaneHeader>
             <PaneBody>
-              <SpyTialGraph 
-                datum={datum} 
-                cndSpec={cndSpec}
-                timeIndex={timeIndex}
-                priorState={layoutStateRef.current}
-                onLayoutStateChange={handleLayoutStateChange}
-                synthesisMode={isSynthesisActive && currentStep > 0}
-                onDataInstanceCreated={handleDataInstanceCreated}
-              />
+              {renderGraphContent()}
             </PaneBody>
           </Pane>
         </div>

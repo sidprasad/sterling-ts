@@ -36,6 +36,13 @@ export interface GraphsState {
 
   // TODO: Refactor this
   hiddenByDatumId: Record<string, Record<string, string[]>>;
+  
+  /** 
+   * Multi-projection selections by generator name.
+   * Maps projection type -> array of selected atom IDs.
+   * When multiple atoms are selected for a type, multiple graphs are shown.
+   */
+  selectedProjectionsByGeneratorName: Record<string, Record<string, string[]>>;
 }
 
 export interface GraphData {
@@ -82,7 +89,8 @@ export function newGraphsState(): GraphsState {
     themeByGeneratorName: {},
     timeByDatumId: {},
     hiddenByDatumId: {},
-    cndSpecByGeneratorName: {}
+    cndSpecByGeneratorName: {},
+    selectedProjectionsByGeneratorName: {}
   };
 }
 

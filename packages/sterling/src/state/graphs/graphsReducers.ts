@@ -558,6 +558,60 @@ function projectionSet(
   validateLayouts(state, datum);
 }
 
+/**
+ * Set the selected projections for a type (for multi-projection view).
+ * This allows selecting multiple atoms for a projection type.
+ */
+function selectedProjectionsSet(
+  state: DraftState,
+  action: PayloadAction<{ 
+    datum: DatumParsed<any>; 
+    projectionType: string;
+    selectedAtoms: string[];
+  }>
+) {
+  const { datum, projectionType, selectedAtoms } = action.payload;
+  const generatorName = datum.generatorName ?? '';
+  
+  if (!state.selectedProjectionsByGeneratorName[generatorName]) {
+    state.selectedProjectionsByGeneratorName[generatorName] = {};
+  }
+  state.selectedProjectionsByGeneratorName[generatorName][projectionType] = selectedAtoms;
+}
+
+/**
+ * Toggle a single projection atom selection for a type.
+ */
+function projectionAtomToggled(
+  state: DraftState,
+  action: PayloadAction<{ 
+    datum: DatumParsed<any>; 
+    projectionType: string;
+    atomId: string;
+  }>
+) {
+  const { datum, projectionType, atomId } = action.payload;
+  const generatorName = datum.generatorName ?? '';
+  
+  if (!state.selectedProjectionsByGeneratorName[generatorName]) {
+    state.selectedProjectionsByGeneratorName[generatorName] = {};
+  }
+  if (!state.selectedProjectionsByGeneratorName[generatorName][projectionType]) {
+    state.selectedProjectionsByGeneratorName[generatorName][projectionType] = [];
+  }
+  
+  const currentSelections = state.selectedProjectionsByGeneratorName[generatorName][projectionType];
+  const index = currentSelections.indexOf(atomId);
+  
+  if (index === -1) {
+    // Add the atom
+    currentSelections.push(atomId);
+  } else {
+    // Remove the atom
+    currentSelections.splice(index, 1);
+  }
+}
+
 function shapeRemoved(
   state: DraftState,
   action: PayloadAction<{ datum: DatumParsed<any>; type: string }>
@@ -802,10 +856,12 @@ export default {
   nodeLabelStyleSet,
   nodesOffset,
   projectionAdded,
+  projectionAtomToggled,
   projectionOrderingSet,
   projectionRemoved,
   projectionSet,
   saveThemeRequested,
+  selectedProjectionsSet,
   shapeRemoved,
   shapeSet,
   shapeStyleRemoved,

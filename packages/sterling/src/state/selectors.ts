@@ -641,6 +641,17 @@ export function selectCnDSpec(
 }
 
 /**
+ * Select the selected projections for multi-projection view.
+ * Returns a record mapping projection type to array of selected atom IDs.
+ */
+export function selectSelectedProjections(
+  state: SterlingState,
+  datum: DatumParsed<any>
+): Record<string, string[]> {
+  return graphsSelectors.selectSelectedProjections(state.graphs, datum);
+}
+
+/**
  * Synthesis mode selectors
  */
 export function selectIsSynthesisEnabled(state: SterlingState): boolean {

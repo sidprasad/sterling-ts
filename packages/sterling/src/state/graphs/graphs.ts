@@ -43,6 +43,13 @@ export interface GraphsState {
    * When multiple atoms are selected for a type, multiple graphs are shown.
    */
   selectedProjectionsByGeneratorName: Record<string, Record<string, string[]>>;
+  
+  /**
+   * Multi-temporal selections by datum ID.
+   * Array of selected time indices for comparing multiple time steps.
+   * When multiple indices are selected, multiple graphs are shown side-by-side.
+   */
+  selectedTimeIndicesByDatumId: Record<string, number[]>;
 }
 
 export interface GraphData {
@@ -90,7 +97,8 @@ export function newGraphsState(): GraphsState {
     timeByDatumId: {},
     hiddenByDatumId: {},
     cndSpecByGeneratorName: {},
-    selectedProjectionsByGeneratorName: {}
+    selectedProjectionsByGeneratorName: {},
+    selectedTimeIndicesByDatumId: {}
   };
 }
 

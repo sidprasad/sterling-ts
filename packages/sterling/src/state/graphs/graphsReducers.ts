@@ -612,6 +612,52 @@ function projectionAtomToggled(
   }
 }
 
+/**
+ * Set the selected time indices for multi-temporal view.
+ * Allows viewing multiple time steps side-by-side.
+ */
+function selectedTimeIndicesSet(
+  state: DraftState,
+  action: PayloadAction<{ 
+    datum: DatumParsed<any>; 
+    selectedIndices: number[];
+  }>
+) {
+  const { datum, selectedIndices } = action.payload;
+  state.selectedTimeIndicesByDatumId[datum.id] = selectedIndices;
+}
+
+/**
+ * Toggle a single time index selection for multi-temporal view.
+ */
+function timeIndexToggled(
+  state: DraftState,
+  action: PayloadAction<{ 
+    datum: DatumParsed<any>; 
+    index: number;
+  }>
+) {
+  const { datum, index } = action.payload;
+  
+  if (!state.selectedTimeIndicesByDatumId[datum.id]) {
+    state.selectedTimeIndicesByDatumId[datum.id] = [];
+  }
+  
+  const currentSelections = state.selectedTimeIndicesByDatumId[datum.id];
+  const idx = currentSelections.indexOf(index);
+  
+  if (idx === -1) {
+    // Add the time index (keep sorted for consistent display)
+    currentSelections.push(index);
+    currentSelections.sort((a, b) => a - b);
+  } else {
+    // Remove the time index (but keep at least one)
+    if (currentSelections.length > 1) {
+      currentSelections.splice(idx, 1);
+    }
+  }
+}
+
 function shapeRemoved(
   state: DraftState,
   action: PayloadAction<{ datum: DatumParsed<any>; type: string }>
@@ -862,12 +908,14 @@ export default {
   projectionSet,
   saveThemeRequested,
   selectedProjectionsSet,
+  selectedTimeIndicesSet,
   shapeRemoved,
   shapeSet,
   shapeStyleRemoved,
   shapeStyleSet,
   themeFileLoaded,
-  timeIndexSet
+  timeIndexSet,
+  timeIndexToggled
 };
 
 export { validateLayouts };

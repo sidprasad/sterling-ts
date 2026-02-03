@@ -1,41 +1,28 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { LayoutState, TransformInfo, NodePositionHint } from './SpyTialGraph';
 
-// Use the Window type declaration from SpyTialGraph.tsx - no need to re-declare
-
-interface ProjectionData {
-  typeId: string;
-  typeName: string;
-  atoms: { id: string; label: string }[];
-}
-
-interface MultiProjectionGraphProps {
+interface MultiTemporalGraphProps {
   datum: DatumParsed<any>;
   cndSpec: string;
-  /** Index of the current time step in a temporal trace */
-  timeIndex?: number;
-  /** The type to project over (e.g., "State", "Time") */
-  projectionType: string;
-  /** The atom IDs to show (from multi-select) */
-  selectedAtoms: string[];
+  /** Array of time indices to display */
+  selectedTimeIndices: number[];
+  /** Total number of time steps in the trace */
+  traceLength: number;
 }
 
-interface SingleProjectionPaneProps {
+interface SingleTemporalPaneProps {
   datum: DatumParsed<any>;
   cndSpec: string;
-  timeIndex?: number;
-  projectionType: string;
-  atomId: string;
-  atomLabel: string;
+  timeIndex: number;
+  traceLength: number;
   index: number;
 }
 
 /**
- * A single pane showing one projection value
+ * A single pane showing one time step
  */
-const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
-  const { datum, cndSpec, timeIndex, projectionType, atomId, atomLabel, index } = props;
+const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
+  const { datum, cndSpec, timeIndex, traceLength, index } = props;
   
   const graphContainerRef = useRef<HTMLDivElement>(null);
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
@@ -43,9 +30,6 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const isInitializedRef = useRef(false);
   const layoutRef = useRef<any>(null);
-  
-  // Debug logging
-  console.log(`[SingleProjectionPane] projectionType=${projectionType}, atomId=${atomId}, atomLabel=${atomLabel}`);
 
   /**
    * Load and render the graph using SpyTial/CnD
@@ -75,8 +59,8 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
         throw new Error('No instances found in Alloy XML');
       }
 
-      // Create AlloyDataInstance for the current time index
-      const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
+      // Create AlloyDataInstance for THIS specific time index
+      const instanceIndex = Math.min(timeIndex, alloyDatum.instances.length - 1);
       const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
 
       // Create SGraphQueryEvaluator
@@ -88,7 +72,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       try {
         layoutSpec = window.CndCore.parseLayoutSpec(cndSpec || '');
       } catch (parseError: any) {
-        console.error(`[Projection ${atomLabel}] Layout spec parse error:`, parseError);
+        console.error(`[Time ${timeIndex}] Layout spec parse error:`, parseError);
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
 
@@ -97,18 +81,16 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       const layoutInstance = new window.CndCore.LayoutInstance(
         layoutSpec,
         sgraphEvaluator,
-        0,
+        instanceIndex, // Use the time index as instance number
         ENABLE_ALIGNMENT_EDGES
       );
 
-      // Generate layout with THIS specific projection
-      // projectionType should be the type ID (e.g., "Position") that SpyTial expects
-      const projections = projectionType ? { [projectionType]: atomId } : {};
-      console.log(`[SingleProjectionPane ${atomLabel}] Generating with projection:`, projectionType, '->', atomId, 'Full projections:', projections);
+      // Generate layout (no projections for temporal view - we're using actual time indices)
+      const projections = window.currentProjections || {};
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
 
       if (layoutResult.error) {
-        console.error(`[Projection ${atomLabel}] Layout generation error:`, layoutResult.error);
+        console.error(`[Time ${timeIndex}] Layout generation error:`, layoutResult.error);
         setError(`Layout error: ${layoutResult.error.message}`);
       }
 
@@ -122,20 +104,20 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 
       setIsLoading(false);
     } catch (err: any) {
-      console.error(`[Projection ${atomLabel}] Error rendering graph:`, err);
+      console.error(`[Time ${timeIndex}] Error rendering graph:`, err);
       setError(`Error: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex, projectionType, atomId, atomLabel]);
+  }, [datum.data, datum.id, cndSpec, timeIndex]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
     if (!graphContainerRef.current || isInitializedRef.current) return;
 
     const graphElement = document.createElement('webcola-cnd-graph') as HTMLElementTagNameMap['webcola-cnd-graph'];
-    graphElement.id = `spytial-graph-projection-${index}`;
+    graphElement.id = `spytial-graph-temporal-${index}`;
     graphElement.setAttribute('layoutFormat', 'default');
-    graphElement.setAttribute('aria-label', `Graph visualization for ${atomLabel}`);
+    graphElement.setAttribute('aria-label', `Graph visualization for time step ${timeIndex + 1}`);
     graphElement.style.cssText = `
       width: 100%;
       height: 100%;
@@ -160,7 +142,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       layoutRef.current = null;
       isInitializedRef.current = false;
     };
-  }, [index, atomLabel]);
+  }, [index, timeIndex]);
 
   // Load graph when dependencies change
   useEffect(() => {
@@ -171,9 +153,11 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 
   return (
     <div className="relative flex flex-col border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
-      {/* Header with projection label */}
-      <div className="px-3 py-2 bg-gray-100 border-b border-gray-200">
-        <span className="font-medium text-sm text-gray-700">{atomLabel}</span>
+      {/* Header with time step label */}
+      <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
+        <span className="font-medium text-sm text-blue-800">
+          State {timeIndex + 1} of {traceLength}
+        </span>
       </div>
       
       {/* Graph container */}
@@ -207,16 +191,14 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 };
 
 /**
- * Component that renders multiple graphs in a grid, one for each selected projection value
+ * Component that renders multiple graphs in a grid, one for each selected time step
  */
-const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
-  const { datum, cndSpec, timeIndex, projectionType, selectedAtoms } = props;
+const MultiTemporalGraph = (props: MultiTemporalGraphProps) => {
+  const { datum, cndSpec, selectedTimeIndices, traceLength } = props;
   
-  // Debug logging for props
-  console.log('[MultiProjectionGraph] Props:', { projectionType, selectedAtoms, datumId: datum?.id });
-  
-  const [projectionData, setProjectionData] = useState<ProjectionData[]>([]);
-  const [isCndCoreReady, setIsCndCoreReady] = useState(typeof window !== 'undefined' && typeof window.CndCore !== 'undefined');
+  const [isCndCoreReady, setIsCndCoreReady] = useState(
+    typeof window !== 'undefined' && typeof window.CndCore !== 'undefined'
+  );
   const [error, setError] = useState<string | null>(null);
 
   // Poll for CndCore availability
@@ -248,68 +230,14 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     return () => clearInterval(intervalId);
   }, [isCndCoreReady]);
 
-  // Extract projection data from the datum to get atom labels
-  useEffect(() => {
-    if (!isCndCoreReady || !datum.data) return;
-
-    try {
-      const alloyXml = datum.data;
-      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
-      
-      if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
-        setError('No instances found in Alloy XML');
-        return;
-      }
-
-      const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
-
-      // Create evaluator to get projection data
-      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
-      sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
-
-      // Parse empty layout spec to get projection data
-      const layoutSpec = window.CndCore.parseLayoutSpec('');
-      const layoutInstance = new window.CndCore.LayoutInstance(layoutSpec, sgraphEvaluator, 0, true);
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, {});
-
-      if (layoutResult.projectionData) {
-        setProjectionData(layoutResult.projectionData);
-      }
-    } catch (err: any) {
-      console.error('Error extracting projection data:', err);
-      setError(`Error: ${err.message}`);
-    }
-  }, [datum.data, timeIndex, isCndCoreReady]);
-
-  // Get the atoms to render - only the selected ones, with their labels
-  const atomsToRender = useMemo(() => {
-    // Find the projection type data to get labels
-    const typeData = projectionData.find(p => p.typeId === projectionType || p.typeName === projectionType);
-    console.log('[MultiProjectionGraph] Looking for typeData:', { projectionType, found: typeData, allTypes: projectionData.map(p => ({ typeId: p.typeId, typeName: p.typeName })) });
-    const allAtoms = typeData?.atoms || [];
-    
-    // Create a map for quick lookup
-    const atomMap = new Map(allAtoms.map(a => [a.id, a]));
-    
-    // Return selected atoms with their labels (fallback to atomId if no match)
-    return selectedAtoms.map(atomId => {
-      const atomData = atomMap.get(atomId);
-      return {
-        id: atomId,
-        label: atomData?.label || atomId  // Use atomId as label if not found
-      };
-    });
-  }, [projectionData, projectionType, selectedAtoms]);
-
-  // Calculate grid columns based on number of projections
+  // Calculate grid columns based on number of time steps
   const gridCols = useMemo(() => {
-    const count = atomsToRender.length;
+    const count = selectedTimeIndices.length;
     if (count <= 2) return count;
     if (count <= 4) return 2;
     if (count <= 6) return 3;
     return 4;
-  }, [atomsToRender.length]);
+  }, [selectedTimeIndices.length]);
 
   if (error) {
     return (
@@ -329,32 +257,24 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     );
   }
 
-  if (atomsToRender.length === 0) {
+  if (selectedTimeIndices.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-4">
         <div className="text-gray-600 bg-gray-50 p-4 rounded-lg">
-          No atoms selected for projection type "{projectionType}".
+          No time steps selected.
         </div>
       </div>
     );
   }
 
-  // Get the type name for display (prefer typeName over typeId)
-  const displayTypeName = useMemo(() => {
-    const typeData = projectionData.find(p => p.typeId === projectionType || p.typeName === projectionType);
-    return typeData?.typeName || projectionType || 'Unknown';
-  }, [projectionData, projectionType]);
-
   return (
-    <div 
-      className="absolute inset-0 overflow-auto bg-gray-100 p-4"
-    >
+    <div className="absolute inset-0 overflow-auto bg-gray-100 p-4">
       <div className="mb-4 px-2">
         <h2 className="text-lg font-semibold text-gray-800">
-          Projections over {displayTypeName}
+          Temporal Comparison
         </h2>
         <p className="text-sm text-gray-600">
-          Showing {atomsToRender.length} selected projection{atomsToRender.length !== 1 ? 's' : ''}
+          Showing {selectedTimeIndices.length} time step{selectedTimeIndices.length !== 1 ? 's' : ''} of {traceLength}
         </p>
       </div>
       
@@ -364,15 +284,13 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
           gridTemplateColumns: `repeat(${gridCols}, minmax(300px, 1fr))`,
         }}
       >
-        {atomsToRender.map((atom, index) => (
-          <SingleProjectionPane
-            key={atom.id}
+        {selectedTimeIndices.map((timeIdx, index) => (
+          <SingleTemporalPane
+            key={`time-${timeIdx}`}
             datum={datum}
             cndSpec={cndSpec}
-            timeIndex={timeIndex}
-            projectionType={projectionType}
-            atomId={atom.id}
-            atomLabel={atom.label}
+            timeIndex={timeIdx}
+            traceLength={traceLength}
             index={index}
           />
         ))}
@@ -381,5 +299,5 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
   );
 };
 
-export { MultiProjectionGraph };
-export type { MultiProjectionGraphProps, ProjectionData };
+export { MultiTemporalGraph };
+export type { MultiTemporalGraphProps };

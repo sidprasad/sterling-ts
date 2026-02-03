@@ -99,11 +99,23 @@ function selectSelectedProjections(
   return state.selectedProjectionsByGeneratorName[generator] ?? {};
 }
 
+/**
+ * Select the selected time indices for multi-temporal view.
+ * Returns an array of time indices to display.
+ */
+function selectSelectedTimeIndices(
+  state: GraphsState,
+  datum: DatumParsed<any>
+): number[] {
+  return state.selectedTimeIndicesByDatumId[datum.id] ?? [];
+}
+
 export default {
   selectGraphLayout,
   selectHiddenRelations,
   selectProjections,
   selectSelectedProjections,
+  selectSelectedTimeIndices,
   selectSpreadMatrix,
   selectTheme,
   selectTimeIndex,

@@ -652,6 +652,17 @@ export function selectSelectedProjections(
 }
 
 /**
+ * Select the selected time indices for multi-temporal view.
+ * Returns an array of time indices to display side-by-side.
+ */
+export function selectSelectedTimeIndices(
+  state: SterlingState,
+  datum: DatumParsed<any>
+): number[] {
+  return graphsSelectors.selectSelectedTimeIndices(state.graphs, datum);
+}
+
+/**
  * Synthesis mode selectors
  */
 export function selectIsSynthesisEnabled(state: SterlingState): boolean {

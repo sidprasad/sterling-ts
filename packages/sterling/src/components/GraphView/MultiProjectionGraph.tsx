@@ -4,6 +4,27 @@ import type { LayoutState, TransformInfo, NodePositionHint } from './SpyTialGrap
 
 // Use the Window type declaration from SpyTialGraph.tsx - no need to re-declare
 
+/**
+ * The signature label that Forge uses to indicate no more instances are available.
+ */
+const NO_MORE_INSTANCES_SIG_LABEL = 
+  'No more instances! Some equivalent instances may have been removed through symmetry breaking.';
+
+/**
+ * Check if an AlloyDataInstance represents the "no more instances" state.
+ */
+function isOutOfInstances(alloyDataInstance: any): boolean {
+  try {
+    const types = alloyDataInstance.getTypes?.() || [];
+    return types.some((type: any) => {
+      const typeId = type.id || type.getId?.() || '';
+      return typeId === NO_MORE_INSTANCES_SIG_LABEL;
+    });
+  } catch {
+    return false;
+  }
+}
+
 interface ProjectionData {
   typeId: string;
   typeName: string;
@@ -78,6 +99,13 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       // Create AlloyDataInstance for the current time index
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
       const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+
+      // Check if this is the "no more instances" marker from Forge
+      if (isOutOfInstances(alloyDataInstance)) {
+        setError('No more instances available.');
+        setIsLoading(false);
+        return;
+      }
 
       // Create SGraphQueryEvaluator
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
@@ -263,6 +291,12 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
 
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
       const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+
+      // Check if this is the "no more instances" marker from Forge
+      if (isOutOfInstances(alloyDataInstance)) {
+        setError('No more instances available.');
+        return;
+      }
 
       // Create evaluator to get projection data
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();

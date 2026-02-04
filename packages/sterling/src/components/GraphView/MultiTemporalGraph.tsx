@@ -1,6 +1,27 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 
+/**
+ * The signature label that Forge uses to indicate no more instances are available.
+ */
+const NO_MORE_INSTANCES_SIG_LABEL = 
+  'No more instances! Some equivalent instances may have been removed through symmetry breaking.';
+
+/**
+ * Check if an AlloyDataInstance represents the "no more instances" state.
+ */
+function isOutOfInstances(alloyDataInstance: any): boolean {
+  try {
+    const types = alloyDataInstance.getTypes?.() || [];
+    return types.some((type: any) => {
+      const typeId = type.id || type.getId?.() || '';
+      return typeId === NO_MORE_INSTANCES_SIG_LABEL;
+    });
+  } catch {
+    return false;
+  }
+}
+
 interface MultiTemporalGraphProps {
   datum: DatumParsed<any>;
   cndSpec: string;
@@ -62,6 +83,13 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
       // Create AlloyDataInstance for THIS specific time index
       const instanceIndex = Math.min(timeIndex, alloyDatum.instances.length - 1);
       const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+
+      // Check if this is the "no more instances" marker from Forge
+      if (isOutOfInstances(alloyDataInstance)) {
+        setError('No more instances available.');
+        setIsLoading(false);
+        return;
+      }
 
       // Create SGraphQueryEvaluator
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();

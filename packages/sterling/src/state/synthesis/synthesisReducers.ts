@@ -149,6 +149,15 @@ function startSynthesis(state: DraftState) {
 }
 
 /**
+ * Handle "no more instances" from Forge during synthesis.
+ * This occurs when Forge has exhausted all satisfying instances.
+ */
+function synthesisOutOfInstances(state: DraftState) {
+  state.isLoading = false;
+  state.error = 'No more instances available. Forge has exhausted all satisfying instances. Consider using fewer examples for synthesis.';
+}
+
+/**
  * Update draft selection (live editing, not committed)
  */
 function updateDraftSelection(
@@ -216,6 +225,7 @@ export default {
   exitSynthesisMode,
   synthesisInstancesLoaded,
   synthesisLoadError,
+  synthesisOutOfInstances,
   addSynthesisExample,
   updateSynthesisExample,
   synthesisStepBack,

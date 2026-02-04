@@ -1,4 +1,5 @@
 import { DataJoinParsed, isDatumAlloy } from '@/sterling-connection';
+import { isOutOfInstances } from '@/alloy-instance';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { castDraft } from 'immer';
 import { WritableDraft } from 'immer/dist/types/types-external';
@@ -22,6 +23,12 @@ function dataReceived(
 
     // For each one, generate matrices, initial layout, and theme
     alloyData.forEach((alloyDatum) => {
+      // Skip "no more instances" marker from Forge - don't try to generate layout
+      if (isOutOfInstances(alloyDatum.parsed)) {
+        console.log('[graphsExtraReducers] Skipping "no more instances" marker');
+        return;
+      }
+      
       const datumId = alloyDatum.id;
 
       // Generate matrices

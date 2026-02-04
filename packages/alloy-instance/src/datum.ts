@@ -60,3 +60,29 @@ export const getTraceLength = (datum: AlloyDatumTrace): number => {
 export const getTraceLoopback = (datum: AlloyDatumTrace): number => {
   return datum.loopBack;
 };
+
+/**
+ * The signature label that Forge uses to indicate no more instances are available.
+ * When all instances have been exhausted, Forge sends a special instance with this
+ * signature containing an atom labeled "No more instances".
+ */
+export const NO_MORE_INSTANCES_SIG_LABEL = 
+  'No more instances! Some equivalent instances may have been removed through symmetry breaking.';
+
+/**
+ * Check if an AlloyDatum represents the "no more instances" state.
+ * Forge signals this by sending an instance with a special signature whose label
+ * contains "No more instances".
+ * 
+ * @param datum The AlloyDatum to check
+ * @returns true if this datum indicates no more instances are available
+ */
+export const isOutOfInstances = (datum: AlloyDatum): boolean => {
+  if (!datum.instances || datum.instances.length === 0) return false;
+  
+  // Check the first instance for the "no more instances" signature
+  const instance = datum.instances[0];
+  const types = Object.values(instance.types);
+  
+  return types.some(type => type.id === NO_MORE_INSTANCES_SIG_LABEL);
+};

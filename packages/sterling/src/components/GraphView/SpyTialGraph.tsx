@@ -1,6 +1,33 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/**
+ * The signature label that Forge uses to indicate no more instances are available.
+ * When all instances have been exhausted, Forge sends a special instance with this
+ * signature containing an atom labeled "No more instances".
+ */
+const NO_MORE_INSTANCES_SIG_LABEL = 
+  'No more instances! Some equivalent instances may have been removed through symmetry breaking.';
+
+/**
+ * Check if an AlloyDataInstance represents the "no more instances" state.
+ * Forge signals this by sending an instance with a special signature.
+ * 
+ * @param alloyDataInstance The AlloyDataInstance to check (from CndCore)
+ * @returns true if this instance indicates no more instances are available
+ */
+function isOutOfInstances(alloyDataInstance: any): boolean {
+  try {
+    const types = alloyDataInstance.getTypes?.() || [];
+    return types.some((type: any) => {
+      const typeId = type.id || type.getId?.() || '';
+      return typeId === NO_MORE_INSTANCES_SIG_LABEL;
+    });
+  } catch {
+    return false;
+  }
+}
+
 // LayoutState bundles positions and transform together for temporal continuity
 // These types match the spytial-core webcola-cnd-graph component API
 export interface TransformInfo {
@@ -221,6 +248,18 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       //   atoms: alloyDataInstance.getAtoms().length,
       //   relations: alloyDataInstance.getRelations().length
       // });
+
+      // Check if this is the "no more instances" marker from Forge
+      if (isOutOfInstances(alloyDataInstance)) {
+        console.log('No more instances available from Forge');
+        setError('No more instances available. All satisfying instances have been exhausted.');
+        setIsLoading(false);
+        // Clear the graph to show there's nothing to display
+        if (graphElementRef.current?.clear) {
+          graphElementRef.current.clear();
+        }
+        return;
+      }
 
       // Notify parent if in synthesis mode - pass raw instance data (not class) for Redux storage
       if (synthesisMode && onDataInstanceCreated) {

@@ -25,6 +25,27 @@ import {
 import { SelectorType } from '../../../../state/synthesis/synthesis';
 
 /**
+ * The signature label that Forge uses to indicate no more instances are available.
+ */
+const NO_MORE_INSTANCES_SIG_LABEL = 
+  'No more instances! Some equivalent instances may have been removed through symmetry breaking.';
+
+/**
+ * Check if an AlloyDataInstance represents the "no more instances" state.
+ */
+function isOutOfInstances(alloyDataInstance: any): boolean {
+  try {
+    const types = alloyDataInstance.getTypes?.() || [];
+    return types.some((type: any) => {
+      const typeId = type.id || type.getId?.() || '';
+      return typeId === NO_MORE_INSTANCES_SIG_LABEL;
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Initial setup step - configure number of instances and selector type
  */
 export const SynthesisSetupStep = () => {
@@ -53,6 +74,11 @@ export const SynthesisSetupStep = () => {
       const firstInstance = new window.CndCore.AlloyDataInstance(
         parsedDatum.instances[0]
       );
+
+      // Check if this is the "no more instances" marker from Forge
+      if (isOutOfInstances(firstInstance)) {
+        throw new Error('No instances available. The current result indicates all instances have been exhausted.');
+      }
 
       console.log('[SynthesisSetup] Starting with first instance');
       dispatch(synthesisInstancesLoaded({ instances: [firstInstance] }));

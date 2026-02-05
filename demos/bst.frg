@@ -23,7 +23,7 @@ pred bst {
     
 }
 
-run {bst} for exactly 10 Tree 
+run {bst} for exactly 1 Tree , exactly 1 Int
 
 
 

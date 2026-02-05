@@ -16,6 +16,7 @@ export const {
   exitSynthesisMode,
   synthesisInstancesLoaded,
   synthesisLoadError,
+  synthesisOutOfInstances,
   addSynthesisExample,
   updateSynthesisExample,
   synthesisStepBack,

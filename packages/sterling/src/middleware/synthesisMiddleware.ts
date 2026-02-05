@@ -1,8 +1,29 @@
 import { dataReceived } from '@/sterling-connection';
 import { Middleware } from '@reduxjs/toolkit';
 import { SterlingState } from '../state/store';
-import { synthesisInstancesLoaded } from '../state/synthesis/synthesisSlice';
+import { synthesisInstancesLoaded, synthesisOutOfInstances } from '../state/synthesis/synthesisSlice';
 // CndCore types are declared in ../types/cndcore.d.ts
+
+/**
+ * The signature label that Forge uses to indicate no more instances are available.
+ */
+const NO_MORE_INSTANCES_SIG_LABEL = 
+  'No more instances! Some equivalent instances may have been removed through symmetry breaking.';
+
+/**
+ * Check if an AlloyDataInstance represents the "no more instances" state.
+ */
+function isOutOfInstances(alloyDataInstance: any): boolean {
+  try {
+    const types = alloyDataInstance.getTypes?.() || [];
+    return types.some((type: any) => {
+      const typeId = type.id || type.getId?.() || '';
+      return typeId === NO_MORE_INSTANCES_SIG_LABEL;
+    });
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Middleware to handle synthesis instance loading from Forge/Alloy
@@ -44,6 +65,13 @@ export const synthesisMiddleware: Middleware<{}, SterlingState> = (store) => (ne
               const newInstance = new window.CndCore.AlloyDataInstance(
                 parsedDatum.instances[0]
               );
+              
+              // Check if this is the "no more instances" marker
+              if (isOutOfInstances(newInstance)) {
+                console.log('[SynthesisMiddleware] No more instances available from Forge');
+                store.dispatch(synthesisOutOfInstances());
+                return result;
+              }
               
               // Add to loaded instances
               const updatedInstances = [...synthesis.loadedInstances, newInstance];

@@ -4,7 +4,6 @@ import { FaFilm } from 'react-icons/fa';
 import { useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectDatumIsTrace } from '../../../../state/selectors';
 import { TimeSection } from './time/TimeSection';
-import { ProjectionSection } from './ProjectionSection';
 
 const GraphStateDrawer = () => {
   const activeDatum = useSterlingSelector(selectActiveDatum);
@@ -16,11 +15,17 @@ const GraphStateDrawer = () => {
   
   return (
     <div className='absolute inset-0 flex flex-col overflow-y-auto'>
-      {/* Projection controls - shows when projection directives exist in layout spec */}
-      <ProjectionSection datum={activeDatum} />
-      
-      {/* Time controls - only for trace-based instances */}
-      {isTrace && <TimeSection datum={activeDatum} />}
+      {/* TimeProjectionSection removed - projections are now handled via SpyTial in Layout drawer */}
+      {isTrace ? (
+        <TimeSection datum={activeDatum} />
+      ) : (
+        <div className='p-4 text-sm text-gray-500'>
+          <p>Time controls are only available for trace-based instances.</p>
+          <p className='mt-2'>
+            Use the <strong>Layout</strong> drawer for projection controls.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

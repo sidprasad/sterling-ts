@@ -53,6 +53,31 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     };
   }, [datum]);
 
+  // Set default selection (first atom) for each projection type when data is loaded
+  useEffect(() => {
+    if (projectionData.length === 0) return;
+
+    projectionData.forEach(typeData => {
+      const typeSelections = selectedProjections[typeData.typeId] || [];
+      // If no atoms are selected for this type and there are atoms available, select the first one
+      if (typeSelections.length === 0 && typeData.atoms.length > 0) {
+        const firstAtomId = typeData.atoms[0].id;
+        
+        dispatch(selectedProjectionsSet({
+          datum,
+          projectionType: typeData.typeId,
+          selectedAtoms: [firstAtomId]
+        }));
+
+        // Update window.currentProjections for SpyTial
+        if (!window.currentProjections) {
+          window.currentProjections = {};
+        }
+        window.currentProjections[typeData.typeId] = firstAtomId;
+      }
+    });
+  }, [projectionData, selectedProjections, datum, dispatch]);
+
   // Handle toggling a projection atom selection
   const handleAtomToggle = useCallback((typeId: string, atomId: string) => {
     dispatch(projectionAtomToggled({

@@ -1,8 +1,8 @@
 import { PaneTitle } from '@/sterling-ui';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec } from '../../../../state/selectors';
-import { cndSpecSet } from '../../../../state/graphs/graphsSlice';
+import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex } from '../../../../state/selectors';
+import { cndSpecSet, selectedProjectionsSet } from '../../../../state/graphs/graphsSlice';
 import { RiHammerFill } from 'react-icons/ri';
 import { Icon } from '@chakra-ui/react';
 
@@ -16,6 +16,49 @@ const GraphLayoutDrawer = () => {
 
   /** Load from XML (if provided) once. */
   const preloadedSpec = useSterlingSelector((state) => datum ? selectCnDSpec(state, datum) : undefined);
+  const selectedProjections = useSterlingSelector((state) =>
+    datum ? selectSelectedProjections(state, datum) : {}
+  );
+  const timeIndex = useSterlingSelector((state) =>
+    datum ? selectTimeIndex(state, datum) : 0
+  );
+
+  const refreshProjectionData = useCallback((specText: string) => {
+    if (!datum?.data) return;
+    if (!window.CndCore?.AlloyInstance?.parseAlloyXML || !window.CndCore?.AlloyDataInstance) return;
+
+    try {
+      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(datum.data);
+      if (!alloyDatum.instances || alloyDatum.instances.length === 0) return;
+
+      const instanceIndex = Math.min(timeIndex, alloyDatum.instances.length - 1);
+      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+
+      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
+
+      let layoutSpec = null;
+      try {
+        layoutSpec = window.CndCore.parseLayoutSpec(specText || '');
+      } catch {
+        layoutSpec = window.CndCore.parseLayoutSpec('');
+      }
+
+      const layoutInstance = new window.CndCore.LayoutInstance(
+        layoutSpec,
+        sgraphEvaluator,
+        instanceIndex,
+        true
+      );
+
+      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, window.currentProjections || {});
+      if (window.updateProjectionData) {
+        window.updateProjectionData(layoutResult.projectionData || []);
+      }
+    } catch (err) {
+      console.error('Failed to refresh projection data:', err);
+    }
+  }, [datum, timeIndex]);
 
   // Load Bootstrap for SpyTial UI
   useEffect(() => {
@@ -71,12 +114,29 @@ const GraphLayoutDrawer = () => {
   const applyLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (!datum) return;
-    
+
+    const cndSpecText = window.getCurrentCNDSpecFromReact?.() || '';
+    refreshProjectionData(cndSpecText);
+
+    // Collapse to single-graph view before re-applying layout.
+    if (!window.currentProjections) {
+      window.currentProjections = {};
+    }
+    Object.entries(selectedProjections).forEach(([projectionType, atoms]) => {
+      dispatch(selectedProjectionsSet({
+        datum,
+        projectionType,
+        selectedAtoms: []
+      }));
+      if (window.currentProjections && window.currentProjections[projectionType]) {
+        delete window.currentProjections[projectionType];
+      }
+    });
+
     if (window.clearAllErrors) {
       window.clearAllErrors();
     }
     
-    const cndSpecText = window.getCurrentCNDSpecFromReact?.() || '';
     dispatch(cndSpecSet({ datum, spec: cndSpecText }));
   };
 
@@ -88,6 +148,7 @@ const GraphLayoutDrawer = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
+        refreshProjectionData(text);
         dispatch(cndSpecSet({ datum, spec: text }));
       };
       reader.readAsText(file);

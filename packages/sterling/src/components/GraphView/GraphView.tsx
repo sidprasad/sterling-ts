@@ -125,24 +125,16 @@ const GraphView = () => {
       window.currentProjections = {};
     }
 
-    // Initialize selections if empty and keep window.currentProjections in sync.
+    // Keep window.currentProjections in sync with current selections.
     normalized.forEach((typeData) => {
       const currentSelections = selections[typeData.typeId] || [];
-      if (currentSelections.length === 0 && typeData.atoms.length > 0) {
-        dispatch(selectedProjectionsSet({
-          datum: activeDatum,
-          projectionType: typeData.typeId,
-          selectedAtoms: [typeData.atoms[0].id]
-        }));
-        window.currentProjections[typeData.typeId] = typeData.atoms[0].id;
-        return;
-      }
-
       if (currentSelections.length > 0) {
         const current = window.currentProjections[typeData.typeId];
         if (!current || !currentSelections.includes(current)) {
           window.currentProjections[typeData.typeId] = currentSelections[0];
         }
+      } else if (window.currentProjections && window.currentProjections[typeData.typeId]) {
+        delete window.currentProjections[typeData.typeId];
       }
     });
 

@@ -27,8 +27,14 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     selectSelectedProjections(state, datum)
   );
 
-  // Listen for projection data updates
+  // Listen for projection data updates and reset state when datum changes
   useEffect(() => {
+    // Reset state for the new datum
+    setProjectionData([]);
+    if (window.currentProjections) {
+      window.currentProjections = {};
+    }
+
     const handleProjectionData = (event: CustomEvent<ProjectionTypeData[]>) => {
       const data = event.detail;
       setProjectionData(data);
@@ -40,21 +46,11 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     const existingData = (window as any).__lastProjectionData;
     if (existingData && existingData.length > 0) {
       handleProjectionData({ detail: existingData } as CustomEvent<ProjectionTypeData[]>);
-    } else {
-      setProjectionData([]);
     }
 
     return () => {
       window.removeEventListener('projectionDataUpdated', handleProjectionData as EventListener);
     };
-  }, [datum]);
-
-  // Reset local state when datum changes
-  useEffect(() => {
-    setProjectionData([]);
-    if (window.currentProjections) {
-      window.currentProjections = {};
-    }
   }, [datum]);
 
   // Handle toggling a projection atom selection

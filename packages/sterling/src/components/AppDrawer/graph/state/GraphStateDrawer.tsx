@@ -3,7 +3,6 @@ import { Icon } from '@chakra-ui/react';
 import { FaFilm } from 'react-icons/fa';
 import { useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectDatumIsTrace } from '../../../../state/selectors';
-import { ProjectionSection } from './ProjectionSection';
 import { TimeSection } from './time/TimeSection';
 
 const GraphStateDrawer = () => {
@@ -16,7 +15,6 @@ const GraphStateDrawer = () => {
   
   return (
     <div className='absolute inset-0 flex flex-col overflow-y-auto'>
-      <ProjectionSection datum={activeDatum} />
       {isTrace ? (
         <TimeSection datum={activeDatum} />
       ) : (

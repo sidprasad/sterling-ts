@@ -1,7 +1,7 @@
 import { SideBarButton } from '@/sterling-ui';
 import { FaFilm } from 'react-icons/fa';
 import { IoSettingsOutline } from 'react-icons/io5';
-import { MdScience, MdWorkspacesOutline } from 'react-icons/md';
+import { MdFilterCenterFocus, MdScience, MdWorkspacesOutline } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { selectGraphDrawer, selectIsSynthesisEnabled, selectMainView } from '../../state/selectors';
 import { graphDrawerViewChanged } from '../../state/ui/uiSlice';
@@ -19,6 +19,12 @@ const GraphViewButtons = () => {
         rightIcon={<FaFilm />}
         isActive={view === 'GraphView' && drawer === 'state'}
         onClick={() => dispatch(graphDrawerViewChanged('state'))}
+      />
+      <SideBarButton
+        text='Projections'
+        rightIcon={<MdFilterCenterFocus />}
+        isActive={view === 'GraphView' && drawer === 'projections'}
+        onClick={() => dispatch(graphDrawerViewChanged('projections'))}
       />
       <SideBarButton
         text='Layout'

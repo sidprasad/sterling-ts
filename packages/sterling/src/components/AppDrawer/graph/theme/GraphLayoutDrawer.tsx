@@ -82,6 +82,24 @@ const GraphLayoutDrawer = () => {
       const data = event.detail;
       setProjectionData(data);
       
+      // When projection directives are removed (data is empty), clear all selected projections
+      // This resets the view back to single graph mode
+      if (datum && data.length === 0) {
+        // Clear all selected projections for this datum
+        Object.keys(selectedProjections).forEach(projectionType => {
+          dispatch(selectedProjectionsSet({
+            datum,
+            projectionType,
+            selectedAtoms: []
+          }));
+        });
+        // Also clear window.currentProjections
+        if (window.currentProjections) {
+          window.currentProjections = {};
+        }
+        return;
+      }
+      
       // Initialize selections if empty
       if (datum && data.length > 0) {
         data.forEach(typeData => {
@@ -96,6 +114,21 @@ const GraphLayoutDrawer = () => {
               window.currentProjections = {};
             }
             window.currentProjections[typeData.typeId] = typeData.atoms[0].id;
+          }
+        });
+        
+        // Also clean up any old projection types that are no longer in the data
+        const validTypeIds = new Set(data.map(d => d.typeId));
+        Object.keys(selectedProjections).forEach(projectionType => {
+          if (!validTypeIds.has(projectionType)) {
+            dispatch(selectedProjectionsSet({
+              datum,
+              projectionType,
+              selectedAtoms: []
+            }));
+            if (window.currentProjections && window.currentProjections[projectionType]) {
+              delete window.currentProjections[projectionType];
+            }
           }
         });
       }

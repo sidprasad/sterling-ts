@@ -307,11 +307,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
 
       // Update projection controls with projection data
-      if (window.updateProjectionData && layoutResult.projectionData) {
-        console.log('Updating projection data:', layoutResult.projectionData);
-        window.updateProjectionData(layoutResult.projectionData);
-      } else if (layoutResult.projectionData && layoutResult.projectionData.length > 0) {
-        console.warn('Projection data available but updateProjectionData function not found. Projection controls may not display correctly.');
+      // IMPORTANT: Always call updateProjectionData - if projectionData is empty/undefined,
+      // we need to clear the projection UI so the view resets to single graph mode
+      if (window.updateProjectionData) {
+        const projectionData = layoutResult.projectionData || [];
+        console.log('Updating projection data:', projectionData);
+        window.updateProjectionData(projectionData);
       }
 
       // Check for layout errors

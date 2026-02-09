@@ -15,8 +15,8 @@ const NavBarTheme = {
     right: 0,
     display: 'flex',
     alignItems: 'center',
-    gap: 3,
-    px: 4,
+    gap: 2,
+    px: 3,
     bg: 'rgba(11, 17, 32, 0.92)',
     backgroundImage:
       'linear-gradient(120deg, #0f172a 0%, #111827 45%, #0b1224 100%)',

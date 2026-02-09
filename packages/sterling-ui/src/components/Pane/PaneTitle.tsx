@@ -7,9 +7,9 @@ const PaneTitle = (props: CenterProps) => {
 
 const PaneTitleTheme = {
   baseStyle: {
-    fontSize: 'sm',
+    fontSize: 'xs',
     fontWeight: 'semibold',
-    letterSpacing: '0.08em',
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
     color: '#0f172a'
   }

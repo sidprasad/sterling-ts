@@ -15,8 +15,8 @@ const PaneHeaderTheme = {
     height: `${sizes.paneHeaderSize}px`,
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    px: 3,
+    gap: '0.5rem',
+    px: 2,
     bg: 'rgba(255, 255, 255, 0.92)',
     backgroundImage:
       'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.9) 100%)',

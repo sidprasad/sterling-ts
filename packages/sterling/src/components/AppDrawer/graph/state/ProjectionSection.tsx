@@ -79,19 +79,36 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
   }, [projectionData, selectedProjections, datum, dispatch]);
 
   // Handle toggling a projection atom selection
+  // In single-type mode: toggle allows multi-select
+  // In multi-type mode: clicking an atom selects only that atom (single select)
   const handleAtomToggle = useCallback((typeId: string, atomId: string) => {
-    dispatch(projectionAtomToggled({
+    const isMultiTypeMode = projectionData.length > 1;
+    const currentSelections = selectedProjections[typeId] || [];
+    
+    let newSelections: string[];
+    if (isMultiTypeMode) {
+      // Multi-type mode: single select only - clicking selects just this atom
+      newSelections = [atomId];
+    } else {
+      // Single-type mode: toggle behavior for multi-select
+      if (currentSelections.includes(atomId)) {
+        // Don't allow deselecting the last atom
+        if (currentSelections.length === 1) {
+          return;
+        }
+        newSelections = currentSelections.filter(id => id !== atomId);
+      } else {
+        newSelections = [...currentSelections, atomId];
+      }
+    }
+
+    dispatch(selectedProjectionsSet({
       datum,
       projectionType: typeId,
-      atomId
+      selectedAtoms: newSelections
     }));
 
     // Update window.currentProjections for SpyTial
-    const currentSelections = selectedProjections[typeId] || [];
-    const newSelections = currentSelections.includes(atomId)
-      ? currentSelections.filter(id => id !== atomId)
-      : [...currentSelections, atomId];
-
     if (!window.currentProjections) {
       window.currentProjections = {};
     }
@@ -101,7 +118,7 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     // Trigger re-layout
     const cndSpecText = window.getCurrentCNDSpecFromReact?.() || cndSpec;
     dispatch(cndSpecSet({ datum, spec: cndSpecText }));
-  }, [datum, dispatch, selectedProjections, cndSpec]);
+  }, [datum, dispatch, selectedProjections, cndSpec, projectionData.length]);
 
   // Select all atoms for a type
   const handleSelectAll = useCallback((typeId: string, atoms: { id: string }[]) => {
@@ -131,17 +148,28 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     return null;
   }
 
+  const isMultiTypeMode = projectionData.length > 1;
+
   return (
     <div className="mx-2 my-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold text-gray-800">Projections</span>
-        <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-          Multi-select
-        </span>
+        {!isMultiTypeMode && (
+          <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+            Multi-select
+          </span>
+        )}
       </div>
-      <p className="text-xs text-gray-500 mb-3">
-        Click atoms to toggle. Multiple selections show separate graphs.
-      </p>
+      {isMultiTypeMode ? (
+        <p className="text-xs text-gray-500 mb-3">
+          Projecting over multiple types. Select one atom per type.
+        </p>
+      ) : (
+        <p className="text-xs text-gray-500 mb-3">
+          Projecting over <span className="font-medium text-gray-700">{projectionData[0].typeName}</span>. 
+          Multiple selections show separate graphs.
+        </p>
+      )}
 
       {projectionData.map(typeData => {
         const typeSelections = selectedProjections[typeData.typeId] || [];
@@ -153,13 +181,15 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
               <label className="text-xs font-medium text-gray-700">
                 {typeData.typeName}
               </label>
-              <button
-                type="button"
-                onClick={() => handleSelectAll(typeData.typeId, typeData.atoms)}
-                className="text-xs text-indigo-600 hover:text-indigo-800"
-              >
-                {allSelected ? 'Select one' : 'Select all'}
-              </button>
+              {!isMultiTypeMode && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectAll(typeData.typeId, typeData.atoms)}
+                  className="text-xs text-indigo-600 hover:text-indigo-800"
+                >
+                  {allSelected ? 'Select one' : 'Select all'}
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {typeData.atoms.map(atom => {
@@ -182,7 +212,7 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
                 );
               })}
             </div>
-            {typeSelections.length > 1 && (
+            {!isMultiTypeMode && typeSelections.length > 1 && (
               <p className="text-xs text-indigo-600 mt-1.5 font-medium">
                 ✓ {typeSelections.length} selected — showing {typeSelections.length} graphs
               </p>

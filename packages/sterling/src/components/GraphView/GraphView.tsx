@@ -1,5 +1,5 @@
 import { Pane, PaneBody, PaneHeader } from '@/sterling-ui';
-import { useCallback, useRef, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { 
   selectActiveDatum, 
@@ -12,11 +12,36 @@ import {
   selectTraceLength
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
+import { selectedProjectionsSet } from '../../state/graphs/graphsSlice';
 import { SpyTialGraph } from './SpyTialGraph';
 import { MultiProjectionGraph } from './MultiProjectionGraph';
 import { MultiTemporalGraph } from './MultiTemporalGraph';
 import type { LayoutState } from './SpyTialGraph';
 import { GraphViewHeader } from './GraphViewHeader';
+
+interface ProjectionTypeData {
+  typeId: string;
+  typeName: string;
+  atoms: { id: string; label: string }[];
+}
+
+const normalizeProjectionData = (data: any[]): ProjectionTypeData[] => {
+  return (data || []).map((typeData) => {
+    const typeName = typeData.type || typeData.typeName || typeData.name || typeData.typeId || '';
+    const typeId = typeName;
+    const rawAtoms = typeData.atoms || [];
+    const atoms = rawAtoms.map((atom: any) => {
+      if (typeof atom === 'string') {
+        return { id: atom, label: atom };
+      }
+      return {
+        id: atom.id || atom.atomId || atom.name || atom.label || '',
+        label: atom.label || atom.name || atom.id || atom.atomId || ''
+      };
+    });
+    return { typeId, typeName, atoms };
+  });
+};
 
 const GraphView = () => {
   const dispatch = useSterlingDispatch();
@@ -63,6 +88,89 @@ const GraphView = () => {
   // Synthesis mode state
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
   const currentStep = useSterlingSelector(selectSynthesisStep);
+
+  const latestDatumRef = useRef(datum);
+  const latestSelectionsRef = useRef(selectedProjections);
+  latestDatumRef.current = datum;
+  latestSelectionsRef.current = selectedProjections;
+
+  const handleProjectionData = useCallback((rawData: any[]) => {
+    const normalized = normalizeProjectionData(rawData || []);
+    (window as any).__lastProjectionData = normalized;
+    window.dispatchEvent(new CustomEvent('projectionDataUpdated', { detail: normalized }));
+
+    const activeDatum = latestDatumRef.current;
+    if (!activeDatum) return;
+
+    const selections = latestSelectionsRef.current || {};
+
+    // When projection directives are removed, clear selections and reset projection state.
+    if (normalized.length === 0) {
+      Object.keys(selections).forEach((projectionType) => {
+        if (selections[projectionType]?.length) {
+          dispatch(selectedProjectionsSet({
+            datum: activeDatum,
+            projectionType,
+            selectedAtoms: []
+          }));
+        }
+      });
+      if (window.currentProjections) {
+        window.currentProjections = {};
+      }
+      return;
+    }
+
+    if (!window.currentProjections) {
+      window.currentProjections = {};
+    }
+
+    // Initialize selections if empty and keep window.currentProjections in sync.
+    normalized.forEach((typeData) => {
+      const currentSelections = selections[typeData.typeId] || [];
+      if (currentSelections.length === 0 && typeData.atoms.length > 0) {
+        dispatch(selectedProjectionsSet({
+          datum: activeDatum,
+          projectionType: typeData.typeId,
+          selectedAtoms: [typeData.atoms[0].id]
+        }));
+        window.currentProjections[typeData.typeId] = typeData.atoms[0].id;
+        return;
+      }
+
+      if (currentSelections.length > 0) {
+        const current = window.currentProjections[typeData.typeId];
+        if (!current || !currentSelections.includes(current)) {
+          window.currentProjections[typeData.typeId] = currentSelections[0];
+        }
+      }
+    });
+
+    // Clean up any projection types that are no longer present.
+    const validTypeIds = new Set(normalized.map((d) => d.typeId));
+    Object.keys(selections).forEach((projectionType) => {
+      if (!validTypeIds.has(projectionType)) {
+        dispatch(selectedProjectionsSet({
+          datum: activeDatum,
+          projectionType,
+          selectedAtoms: []
+        }));
+        if (window.currentProjections && window.currentProjections[projectionType]) {
+          delete window.currentProjections[projectionType];
+        }
+      }
+    });
+  }, [dispatch]);
+
+  // Ensure projection data always syncs, even when the drawer is not open.
+  if (typeof window !== 'undefined') {
+    const existingHandler = window.updateProjectionData as any;
+    if (!existingHandler || !existingHandler.__isMultiSelectHandler) {
+      const handler = (data: any[]) => handleProjectionData(data);
+      (handler as any).__isMultiSelectHandler = true;
+      window.updateProjectionData = handler;
+    }
+  }
 
   // Store layout state for temporal trace continuity
   // We use a ref to avoid re-renders when state changes

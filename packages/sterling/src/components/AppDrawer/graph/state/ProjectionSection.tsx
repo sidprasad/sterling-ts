@@ -85,6 +85,9 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     const isMultiTypeMode = projectionData.length > 1;
     const currentSelections = selectedProjections[typeId] || [];
     
+    // Get the type data for ordering
+    const typeData = projectionData.find(pd => pd.typeId === typeId);
+    
     let newSelections: string[];
     if (isMultiTypeMode) {
       // Multi-type mode: single select only - clicking selects just this atom
@@ -98,7 +101,18 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
         }
         newSelections = currentSelections.filter(id => id !== atomId);
       } else {
-        newSelections = [...currentSelections, atomId];
+        // Add the new atom and re-order according to projectionData.atoms order
+        const updatedSelections = [...currentSelections, atomId];
+        if (typeData?.atoms) {
+          const atomOrder = typeData.atoms.map(a => a.id);
+          newSelections = updatedSelections.sort((a, b) => {
+            const indexA = atomOrder.indexOf(a);
+            const indexB = atomOrder.indexOf(b);
+            return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+          });
+        } else {
+          newSelections = updatedSelections;
+        }
       }
     }
 

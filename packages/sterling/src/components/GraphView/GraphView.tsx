@@ -76,7 +76,24 @@ const GraphView = () => {
       console.log(`[GraphView] Checking typeId="${typeId}", atoms:`, atoms);
       if (atoms.length > 1) {
         console.log(`[GraphView] Found multi-projection: typeId="${typeId}" with ${atoms.length} atoms`);
-        return { typeId, atoms };
+        
+        // Get the original order from projectionData to ensure atoms are displayed in correct order
+        const projectionData = (window as any).__lastProjectionData as ProjectionTypeData[] | undefined;
+        const typeData = projectionData?.find(pd => pd.typeId === typeId);
+        
+        // Sort atoms according to their order in projectionData.atoms
+        let orderedAtoms = atoms;
+        if (typeData?.atoms) {
+          const atomOrder = typeData.atoms.map(a => a.id);
+          orderedAtoms = [...atoms].sort((a, b) => {
+            const indexA = atomOrder.indexOf(a);
+            const indexB = atomOrder.indexOf(b);
+            // If not found in atomOrder, put at end
+            return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+          });
+        }
+        
+        return { typeId, atoms: orderedAtoms };
       }
     }
     return null;

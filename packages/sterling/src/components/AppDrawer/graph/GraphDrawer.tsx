@@ -10,6 +10,10 @@ import {
   GraphStateDrawerHeader
 } from './state/GraphStateDrawer';
 import {
+  GraphProjectionsDrawer,
+  GraphProjectionsDrawerHeader
+} from './projections/GraphProjectionsDrawer';
+import {
   ExplorerDrawer,
   ExplorerDrawerHeader
 } from '../common/explorer/ExplorerDrawer';
@@ -22,6 +26,7 @@ const GraphDrawer = () => {
     <>
       {drawer === 'explorer' && <ExplorerDrawer />}
       {drawer === 'state' && <GraphStateDrawer />}
+      {drawer === 'projections' && <GraphProjectionsDrawer />}
       {drawer === 'evaluator' && <EvaluatorDrawer />}
       {drawer === 'log' && <LogDrawer />}
       {drawer === 'layout' && <GraphLayoutDrawer />}
@@ -31,6 +36,7 @@ const GraphDrawer = () => {
 };
 
 // state drawer = time
+// projections drawer = projection controls
 // explorer = select instance
 // theme = theme
 
@@ -40,6 +46,7 @@ const GraphDrawerHeader = () => {
     <>
       {drawer === 'explorer' && <ExplorerDrawerHeader />}
       {drawer === 'state' && <GraphStateDrawerHeader />}
+      {drawer === 'projections' && <GraphProjectionsDrawerHeader />}
       {drawer === 'evaluator' && <EvaluatorDrawerHeader />}
       {drawer === 'log' && <LogDrawerHeader />}
       {drawer === 'layout' && <GraphLayoutDrawerHeader />}

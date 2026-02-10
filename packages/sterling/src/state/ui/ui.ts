@@ -8,10 +8,9 @@ export type GraphDrawerView =
   | 'state'
   | 'projections'
   | 'layout'
-  | 'settings'
   | 'synthesis';
-export type TableDrawerView = CommonDrawerView | 'state' | 'settings';
-export type ScriptDrawerView = CommonDrawerView | 'variables' | 'settings';
+export type TableDrawerView = CommonDrawerView | 'state';
+export type ScriptDrawerView = CommonDrawerView | 'variables';
 
 export interface UiState {
   // the views available to the user

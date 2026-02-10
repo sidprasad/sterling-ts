@@ -1,6 +1,4 @@
 import { PaneTitle } from '@/sterling-ui';
-import { Icon } from '@chakra-ui/react';
-import { FaFilm } from 'react-icons/fa';
 import { useSterlingSelector } from '../../../state/hooks';
 import { selectActiveDatum } from '../../../state/selectors';
 import { TimeSection } from '../graph/state/time/TimeSection';
@@ -19,7 +17,6 @@ const TableStateDrawer = () => {
 const TableStateDrawerHeader = () => {
   return (
     <div className='flex items-center px-2 space-x-2'>
-      <Icon as={FaFilm} />
       <PaneTitle>Time</PaneTitle>
     </div>
   );

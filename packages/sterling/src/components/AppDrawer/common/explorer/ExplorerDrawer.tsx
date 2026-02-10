@@ -1,8 +1,7 @@
 import { buttonClicked } from '@/sterling-connection';
 import { PaneTitle } from '@/sterling-ui';
-import { Box, Button, Flex, Heading, Icon, Select, Tooltip } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Select, Tooltip } from '@chakra-ui/react';
 import { useCallback, useState } from 'react';
-import { FaFilm } from 'react-icons/fa';
 import { useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectData, selectProviderGeneratorNames, selectSelectedGenerator,  } from '../../../../state/selectors';
 import { ListViewData } from './ListView/ListViewData';
@@ -95,7 +94,6 @@ const ExplorerDrawer = () => {
 const ExplorerDrawerHeader = () => {
   return (
     <div className='flex items-center px-2 space-x-2'>
-      <Icon as={FaFilm} />
       <PaneTitle>Explorer</PaneTitle>
     </div>
   );

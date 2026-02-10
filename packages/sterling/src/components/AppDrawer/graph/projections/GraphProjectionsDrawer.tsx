@@ -1,6 +1,4 @@
 import { PaneTitle } from '@/sterling-ui';
-import { Icon } from '@chakra-ui/react';
-import { MdFilterCenterFocus } from 'react-icons/md';
 import { useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum } from '../../../../state/selectors';
 import { ProjectionSection } from '../state/ProjectionSection';
@@ -20,7 +18,6 @@ const GraphProjectionsDrawer = () => {
 const GraphProjectionsDrawerHeader = () => {
   return (
     <div className='flex items-center px-2 space-x-2'>
-      <Icon as={MdFilterCenterFocus} />
       <PaneTitle>Projections</PaneTitle>
     </div>
   );

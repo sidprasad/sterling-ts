@@ -1,6 +1,5 @@
 import { SideBarButton } from '@/sterling-ui';
 import { FaFilm } from 'react-icons/fa';
-import { IoSettingsOutline } from 'react-icons/io5';
 import { MdFilterCenterFocus, MdScience, MdWorkspacesOutline } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { selectGraphDrawer, selectIsSynthesisEnabled, selectMainView } from '../../state/selectors';
@@ -40,12 +39,6 @@ const GraphViewButtons = () => {
           onClick={() => dispatch(graphDrawerViewChanged('synthesis'))}
         />
       )}
-      <SideBarButton
-        text='Settings'
-        rightIcon={<IoSettingsOutline />}
-        isActive={view === 'GraphView' && drawer === 'settings'}
-        onClick={() => dispatch(graphDrawerViewChanged('settings'))}
-      />
     </>
   );
 };

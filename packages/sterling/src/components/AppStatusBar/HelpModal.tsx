@@ -53,15 +53,11 @@ function GraphViewHelp() {
       <Center><strong>Graph View</strong></Center>
       <Box as="ul" listStyleType="circle">
         <li><strong>Zoom</strong> with the mouse wheel or with <em>two fingers</em> on the trackpad.</li>
-        <li>Use the <strong>theme</strong> tab on the sidebar to adjust styling options such as 
-          node coloring by sig, source and destination for edges, etc.
-          You can also save the theme-definition file or load one you've already created.</li>
         <li>The <strong>time</strong> tab will let you adjust the layout according to time index, if 
           that is appropriate for your model. In a Temporal model, you'll see a minimap and have the option 
           to move back and forth in time. In a model that isn't explicitly temporal, you can still declare 
           a sig as the time index and use it to navigate.</li>
-        <li>The <strong>layout</strong> tab opens the CnD interface, which is an alternative graph-based 
-        visualization that gives more control over your instance diagram.</li>
+        <li>The <strong>layout</strong> tab opens the Spytial interface, which gives more control over your instance diagram.</li>
       </Box></>)
 }
 function ScriptViewHelp() {

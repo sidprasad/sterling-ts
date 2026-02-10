@@ -3,8 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex } from '../../../../state/selectors';
 import { cndSpecSet, selectedProjectionsSet } from '../../../../state/graphs/graphsSlice';
-import { RiHammerFill } from 'react-icons/ri';
-import { Icon } from '@chakra-ui/react';
 
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
@@ -214,7 +212,6 @@ export default GraphLayoutDrawer;
 const GraphLayoutDrawerHeader = () => {
   return (
     <div className='w-full flex items-center px-2 space-x-2'>
-      <Icon as={RiHammerFill} />
       <PaneTitle>Layout</PaneTitle>
     </div>
   );

@@ -94,7 +94,6 @@ const SynthesisDrawer = () => {
 const SynthesisDrawerHeader = () => {
   return (
     <div className='w-full flex items-center px-2 space-x-2'>
-      <Icon as={MdScience} />
       <PaneTitle>Synthesis</PaneTitle>
     </div>
   );

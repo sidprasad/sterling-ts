@@ -1,7 +1,5 @@
 import { DatumParsed } from '@/sterling-connection';
 import { PaneTitle } from '@/sterling-ui';
-import { Icon } from '@chakra-ui/react';
-import { VscVariableGroup } from 'react-icons/vsc';
 import { DatumVariablesSection } from './DatumVariablesSection';
 import { StageVariablesSection } from './StageVariablesSection';
 
@@ -23,7 +21,6 @@ const VariablesDrawer = (props: VariablesDrawerProps) => {
 const VariablesDrawerHeader = () => {
   return (
     <div className='w-full flex items-center px-2 space-x-2'>
-      <Icon as={VscVariableGroup} />
       <PaneTitle>Variables</PaneTitle>
     </div>
   );

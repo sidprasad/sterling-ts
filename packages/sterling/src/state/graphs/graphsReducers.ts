@@ -22,6 +22,7 @@ import { Matrix } from 'transformation-matrix';
 import { generateLayoutId, GraphsState } from './graphs';
 import { DEFAULT_LAYOUT_SETTINGS } from './graphsDefaults';
 import { LiteralUnion } from 'prettier';
+import { parseCndFile } from '../../utils/cndPreParser';
 
 /**
  * An Immer draft of a GraphsState object, so that we can "mutate" the state
@@ -791,6 +792,7 @@ function timeIndexSet(
 
 /**
  * Set the CnD spec for a generator (by generator name, so it persists across instances).
+ * Also parses projections and sequence policy from the CND spec.
  */
 function cndSpecSet(
   state: DraftState,
@@ -799,6 +801,19 @@ function cndSpecSet(
   const { datum, spec } = action.payload;
   const generator = datum.generatorName ?? '';
   state.cndSpecByGeneratorName[generator] = spec;
+
+  // Parse projection config and sequence policy from the CND spec
+  try {
+    const parsed = parseCndFile(spec);
+    state.projectionConfigByGeneratorName[generator] = parsed.projections;
+    state.sequencePolicyByGeneratorName[generator] = parsed.sequence.policy;
+  } catch (err) {
+    // On parse failure, clear derived config but keep the raw spec
+    // (the layout parser will show its own error)
+    console.warn('[cndSpecSet] Failed to pre-parse CND spec:', err);
+    state.projectionConfigByGeneratorName[generator] = [];
+    state.sequencePolicyByGeneratorName[generator] = 'ignore_history';
+  }
 }
 
 function getEdgeStyleSpecUnique(

@@ -9,7 +9,9 @@ import {
   selectSynthesisStep,
   selectSelectedProjections,
   selectSelectedTimeIndices,
-  selectTraceLength
+  selectTraceLength,
+  selectProjectionConfig,
+  selectSequencePolicyName
 } from '../../state/selectors';
 import { setCurrentDataInstance } from '../../state/synthesis/synthesisSlice';
 import { selectedProjectionsSet } from '../../state/graphs/graphsSlice';
@@ -67,6 +69,14 @@ const GraphView = () => {
   const selectedTimeIndices = useSterlingSelector((state) =>
     datum ? selectSelectedTimeIndices(state, datum) : []
   );
+
+  // CND-derived projection config and sequence policy
+  const projectionConfig = useSterlingSelector((state) =>
+    datum ? selectProjectionConfig(state, datum) : []
+  ) || [];
+  const sequencePolicyName = useSterlingSelector((state) =>
+    datum ? selectSequencePolicyName(state, datum) : undefined
+  );
   
   // Calculate total number of graphs to show
   // For now, we use the first projection type that has multiple selections
@@ -101,6 +111,18 @@ const GraphView = () => {
   
   // Check if multi-temporal mode is active (more than 1 time index selected)
   const isMultiTemporalActive = selectedTimeIndices.length > 1;
+
+  // Build a Record<string, string> of single-atom selections for applyProjectionTransform
+  // (uses the first selected atom per projection type)
+  const projectionSelections = useMemo(() => {
+    const selections: Record<string, string> = {};
+    for (const [typeId, atoms] of Object.entries(selectedProjections)) {
+      if (atoms.length > 0) {
+        selections[typeId] = atoms[0];
+      }
+    }
+    return selections;
+  }, [selectedProjections]);
   
   // Synthesis mode state
   const isSynthesisActive = useSterlingSelector(selectIsSynthesisActive);
@@ -219,6 +241,7 @@ const GraphView = () => {
           cndSpec={cndSpec}
           selectedTimeIndices={selectedTimeIndices}
           traceLength={traceLength}
+          sequencePolicyName={sequencePolicyName}
         />
       );
     }
@@ -244,6 +267,9 @@ const GraphView = () => {
         onLayoutStateChange={handleLayoutStateChange}
         synthesisMode={isSynthesisActive && currentStep > 0}
         onDataInstanceCreated={handleDataInstanceCreated}
+        projectionConfig={projectionConfig}
+        sequencePolicyName={sequencePolicyName}
+        projectionSelections={projectionSelections}
       />
     );
   };

@@ -1,5 +1,6 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { parseCndFile, SequencePolicyName } from '../../utils/cndPreParser';
 
 /**
  * The signature label that Forge uses to indicate no more instances are available.
@@ -29,6 +30,8 @@ interface MultiTemporalGraphProps {
   selectedTimeIndices: number[];
   /** Total number of time steps in the trace */
   traceLength: number;
+  /** Sequence policy name from CND spec */
+  sequencePolicyName?: SequencePolicyName;
 }
 
 interface SingleTemporalPaneProps {
@@ -37,13 +40,15 @@ interface SingleTemporalPaneProps {
   timeIndex: number;
   traceLength: number;
   index: number;
+  /** Sequence policy name from CND spec */
+  sequencePolicyName?: SequencePolicyName;
 }
 
 /**
  * A single pane showing one time step
  */
 const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
-  const { datum, cndSpec, timeIndex, traceLength, index } = props;
+  const { datum, cndSpec, timeIndex, traceLength, index, sequencePolicyName = 'stability' } = props;
   
   const graphContainerRef = useRef<HTMLDivElement>(null);
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
@@ -95,10 +100,11 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
-      // Parse layout specification
+      // Parse layout specification using pre-parser
+      const parsedCnd = parseCndFile(cndSpec || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(cndSpec || '');
+        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch (parseError: any) {
         console.error(`[Time ${timeIndex}] Layout spec parse error:`, parseError);
         layoutSpec = window.CndCore.parseLayoutSpec('');
@@ -113,9 +119,8 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
         ENABLE_ALIGNMENT_EDGES
       );
 
-      // Generate layout (no projections for temporal view - we're using actual time indices)
-      const projections = window.currentProjections || {};
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
+      // Generate layout with single-arg API
+      const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
 
       if (layoutResult.error) {
         console.error(`[Time ${timeIndex}] Layout generation error:`, layoutResult.error);
@@ -136,7 +141,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
       setError(`Error: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, sequencePolicyName]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
@@ -222,7 +227,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
  * Component that renders multiple graphs in a grid, one for each selected time step
  */
 const MultiTemporalGraph = (props: MultiTemporalGraphProps) => {
-  const { datum, cndSpec, selectedTimeIndices, traceLength } = props;
+  const { datum, cndSpec, selectedTimeIndices, traceLength, sequencePolicyName } = props;
   
   const [isCndCoreReady, setIsCndCoreReady] = useState(
     typeof window !== 'undefined' && typeof window.CndCore !== 'undefined'
@@ -320,6 +325,7 @@ const MultiTemporalGraph = (props: MultiTemporalGraphProps) => {
             timeIndex={timeIdx}
             traceLength={traceLength}
             index={index}
+            sequencePolicyName={sequencePolicyName}
           />
         ))}
       </div>

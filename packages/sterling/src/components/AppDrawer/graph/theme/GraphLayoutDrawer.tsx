@@ -1,8 +1,9 @@
 import { PaneTitle } from '@/sterling-ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex } from '../../../../state/selectors';
+import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex, selectProjectionConfig, selectSequencePolicyName } from '../../../../state/selectors';
 import { cndSpecSet, selectedProjectionsSet } from '../../../../state/graphs/graphsSlice';
+import { parseCndFile } from '../../../../utils/cndPreParser';
 
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
@@ -35,9 +36,11 @@ const GraphLayoutDrawer = () => {
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
+      // Use parseCndFile to strip projection/sequence blocks before passing to parseLayoutSpec
+      const parsedCnd = parseCndFile(specText || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(specText || '');
+        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch {
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
@@ -49,14 +52,52 @@ const GraphLayoutDrawer = () => {
         true
       );
 
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, window.currentProjections || {});
-      if (window.updateProjectionData) {
-        window.updateProjectionData(layoutResult.projectionData || []);
+      // Single-arg generateLayout (projections handled via applyProjectionTransform elsewhere)
+      const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
+
+      // If CND spec has projections, use applyProjectionTransform to get choices
+      if (parsedCnd.projections.length > 0 && window.CndCore.applyProjectionTransform) {
+        try {
+          // Convert selectedProjections (Record<string, string[]>) to Record<string, string>
+          // by taking the first selected atom per type
+          const singleSelections: Record<string, string> = {};
+          for (const [typeId, atoms] of Object.entries(selectedProjections)) {
+            if (atoms.length > 0) {
+              singleSelections[typeId] = atoms[0];
+            }
+          }
+          const projResult = window.CndCore.applyProjectionTransform(
+            alloyDataInstance,
+            parsedCnd.projections,
+            singleSelections,
+            {
+              evaluateOrderBy: (selector: string) => {
+                try {
+                  return sgraphEvaluator.evaluate(selector).selectedTwoples();
+                } catch {
+                  return [];
+                }
+              }
+            }
+          );
+          if (window.updateProjectionData) {
+            window.updateProjectionData(projResult.choices || []);
+          }
+        } catch (err) {
+          console.error('Failed to get projection choices:', err);
+          if (window.updateProjectionData) {
+            window.updateProjectionData([]);
+          }
+        }
+      } else {
+        if (window.updateProjectionData) {
+          window.updateProjectionData(layoutResult.projectionData || []);
+        }
       }
     } catch (err) {
       console.error('Failed to refresh projection data:', err);
     }
-  }, [datum, timeIndex]);
+  }, [datum, timeIndex, selectedProjections]);
 
   // Load Bootstrap for SpyTial UI
   useEffect(() => {

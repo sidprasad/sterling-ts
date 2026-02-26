@@ -1,2 +1,24 @@
+# River-Crossing Problem CND Layout Specification
+# Demonstrates projections and sequence policy as top-level YAML constructs
+
+# Projections: Define which types to project over and optional ordering
+projections:
+  - type: State
+    orderBy: "State -> idx"
+
+# Sequence: Define temporal continuity policy for trace navigation
+sequence:
+  policy: stability
+
+# Layout constraints and directives (passed to spytial-core parseLayoutSpec)
+constraints:
+  - select: Farmer
+    style:
+      shape: rectangle
+      color: green
+
+directives:
+  - flag: hideDisconnectedBuiltIns
+
 # Goat : https://i.pinimg.com/originals/f8/01/e4/f801e4c0be2ef6505f099093a15ae2d8.jpg
 # Wolf: https://easydrawingguides.com/wp-content/uploads/2023/09/how-to-draw-a-cartoon-wolf-featured-image-1200.png

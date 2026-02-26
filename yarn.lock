@@ -3483,6 +3483,11 @@
     expect "^29.0.0"
     pretty-format "^29.0.0"
 
+"@types/js-yaml@^4.0.9":
+  version "4.0.9"
+  resolved "https://registry.yarnpkg.com/@types/js-yaml/-/js-yaml-4.0.9.tgz#cd82382c4f902fed9691a2ed79ec68c5898af4c2"
+  integrity sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==
+
 "@types/jsdom@^20.0.0":
   version "20.0.1"
   resolved "https://registry.yarnpkg.com/@types/jsdom/-/jsdom-20.0.1.tgz#07c14bc19bd2f918c1929541cdaacae894744808"
@@ -7954,7 +7959,7 @@ js-yaml@^3.13.1:
     argparse "^1.0.7"
     esprima "^4.0.0"
 
-js-yaml@^4.1.0:
+js-yaml@^4.1.0, js-yaml@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-4.1.1.tgz#854c292467705b699476e1a2decc0c8a3458806b"
   integrity sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==
@@ -10064,10 +10069,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-spytial-core@^1.9.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/spytial-core/-/spytial-core-1.9.0.tgz#f27d80eded24f673630d8cc89b883eb980c94db1"
-  integrity sha512-XahbNjcVytxq/9+UgTcUHm0V8GK9+UwS5MnlYQYQQRYmUMc0O0uh+VlRwR7LcbOoEJnR5b2Mg/MBaDRoJHBBbA==
+spytial-core@^1.9.1-beta.5:
+  version "1.9.1-beta.5"
+  resolved "https://registry.yarnpkg.com/spytial-core/-/spytial-core-1.9.1-beta.5.tgz#9006eb2bce80e75580454db61ae6b26aecd96062"
+  integrity sha512-uQEaHt2hQycU5iNT2Jrcz1eBHPOw+XrA4UPEwAwNHYl1aCE+dzn9FD+onj4vpmAfKaKRanC4J4ei28SSSgBj0A==
   dependencies:
     "@types/d3" "^4.13.12"
     "@types/graphlib-dot" "^0.6.4"

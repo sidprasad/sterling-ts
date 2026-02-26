@@ -663,6 +663,28 @@ export function selectSelectedTimeIndices(
 }
 
 /**
+ * Select the CND-derived projection configuration for a datum.
+ * Projections parsed from the top-level `projections` block of the CND spec.
+ */
+export function selectProjectionConfig(
+  state: SterlingState,
+  datum: DatumParsed<any>
+) {
+  return graphsSelectors.selectProjectionConfig(state.graphs, datum);
+}
+
+/**
+ * Select the CND-derived sequence policy name for a datum.
+ * Parsed from the top-level `sequence` block of the CND spec.
+ */
+export function selectSequencePolicyName(
+  state: SterlingState,
+  datum: DatumParsed<any>
+) {
+  return graphsSelectors.selectSequencePolicyName(state.graphs, datum);
+}
+
+/**
  * Synthesis mode selectors
  */
 export function selectIsSynthesisEnabled(state: SterlingState): boolean {

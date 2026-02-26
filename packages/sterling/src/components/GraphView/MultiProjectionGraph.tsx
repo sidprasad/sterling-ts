@@ -143,7 +143,9 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
               }
             }
           );
-          instanceForLayout = projResult.instance;
+          if (projResult && projResult.instance) {
+            instanceForLayout = projResult.instance;
+          }
         } catch (err: any) {
           console.error(`[Projection ${atomLabel}] Projection transform failed:`, err);
           // Fall back to un-projected instance

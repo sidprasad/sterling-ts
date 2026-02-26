@@ -56,13 +56,13 @@ const GraphLayoutDrawer = () => {
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
 
       // If CND spec has projections, use applyProjectionTransform to get choices
-      if (parsedCnd.projections.length > 0 && window.CndCore.applyProjectionTransform) {
+      if (parsedCnd.projections.length > 0 && typeof window.CndCore.applyProjectionTransform === 'function') {
         try {
           // Convert selectedProjections (Record<string, string[]>) to Record<string, string>
           // by taking the first selected atom per type
           const singleSelections: Record<string, string> = {};
           for (const [typeId, atoms] of Object.entries(selectedProjections)) {
-            if (atoms.length > 0) {
+            if (Array.isArray(atoms) && atoms.length > 0) {
               singleSelections[typeId] = atoms[0];
             }
           }
@@ -81,7 +81,8 @@ const GraphLayoutDrawer = () => {
             }
           );
           if (window.updateProjectionData) {
-            window.updateProjectionData(projResult.choices || []);
+            const choices = (projResult && Array.isArray(projResult.choices)) ? projResult.choices : [];
+            window.updateProjectionData(choices);
           }
         } catch (err) {
           console.error('Failed to get projection choices:', err);
@@ -91,7 +92,10 @@ const GraphLayoutDrawer = () => {
         }
       } else {
         if (window.updateProjectionData) {
-          window.updateProjectionData(layoutResult.projectionData || []);
+          const projData = (layoutResult && Array.isArray(layoutResult.projectionData))
+            ? layoutResult.projectionData
+            : [];
+          window.updateProjectionData(projData);
         }
       }
     } catch (err) {

@@ -359,8 +359,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
               }
             }
           );
-          instanceForLayout = projResult.instance;
-          projectionChoices = projResult.choices;
+          if (projResult && projResult.instance) {
+            instanceForLayout = projResult.instance;
+          }
+          if (projResult && Array.isArray(projResult.choices)) {
+            projectionChoices = projResult.choices;
+          }
         } catch (err: any) {
           console.error('Projection transform failed:', err);
           // Fall back to un-projected instance
@@ -440,17 +444,28 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         const renderOptions: any = {};
         const hasPriorState = priorState && priorState.positions && priorState.positions.length > 0;
 
-        if (hasPriorState && prevInstanceRef.current && sequencePolicyName !== 'ignore_history') {
+        if (hasPriorState && prevInstanceRef.current && sequencePolicyName && sequencePolicyName !== 'ignore_history') {
           // Use sequence policy API for inter-step continuity
           try {
-            if (window.CndCore.getSequencePolicy) {
-              renderOptions.policy = window.CndCore.getSequencePolicy(sequencePolicyName);
-              renderOptions.prevInstance = prevInstanceRef.current;
-              renderOptions.currInstance = alloyDataInstance;
-              renderOptions.priorPositions = priorState;
+            if (typeof window.CndCore.getSequencePolicy === 'function') {
+              const policy = window.CndCore.getSequencePolicy(sequencePolicyName);
+              if (policy) {
+                renderOptions.policy = policy;
+                renderOptions.prevInstance = prevInstanceRef.current;
+                renderOptions.currInstance = alloyDataInstance;
+                renderOptions.priorPositions = priorState;
+              } else {
+                // Policy lookup returned null/undefined — fall back to simple prior state
+                renderOptions.priorState = priorState;
+              }
+            } else {
+              // getSequencePolicy not available — fall back to simple prior state
+              renderOptions.priorState = priorState;
             }
           } catch (err) {
             console.warn('[SpyTialGraph] Failed to get sequence policy:', err);
+            // Fall back to simple prior state on error
+            renderOptions.priorState = priorState;
           }
         } else if (hasPriorState) {
           // Fallback: simple prior state passing (ignore_history / no policy)

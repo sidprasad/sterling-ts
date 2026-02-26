@@ -142,35 +142,72 @@ export function parseCndFile(cndSpec: string): ParsedCndFile {
     for (const entry of parsed.projections) {
       if (entry && typeof entry === 'object') {
         // Accept both 'type' and 'sig' keys in YAML, preferring 'type'
-        const typeName = (entry as any).type || (entry as any).sig;
-        if (typeof typeName === 'string') {
+        const rawType = (entry as any).type ?? (entry as any).sig;
+        const typeName = typeof rawType === 'string' ? rawType.trim() : '';
+        if (typeName.length > 0) {
           const proj: CndProjection = { type: typeName };
-          if (typeof (entry as any).orderBy === 'string') {
-            proj.orderBy = (entry as any).orderBy;
+          const rawOrderBy = (entry as any).orderBy;
+          if (typeof rawOrderBy === 'string' && rawOrderBy.trim().length > 0) {
+            proj.orderBy = rawOrderBy.trim();
           }
           projections.push(proj);
+        } else {
+          console.warn(
+            '[CND Pre-Parser] Skipping projection entry with missing or empty "type"/"sig":',
+            entry
+          );
         }
+      } else if (typeof entry === 'string' && entry.trim().length > 0) {
+        // Shorthand: allow bare strings as projection type names
+        // e.g. projections: ["State", "Time"]
+        projections.push({ type: entry.trim() });
+      } else {
+        console.warn('[CND Pre-Parser] Skipping invalid projection entry:', entry);
       }
     }
+  } else if (parsed.projections !== undefined && parsed.projections !== null) {
+    console.warn(
+      '[CND Pre-Parser] "projections" should be an array, got:',
+      typeof parsed.projections
+    );
   }
 
   // ── Extract sequence config ──────────────────────────────────────
 
   let sequence: CndSequenceConfig = { ...DEFAULT_SEQUENCE_CONFIG };
 
-  if (parsed.sequence && typeof parsed.sequence === 'object') {
-    const seqBlock = parsed.sequence as Record<string, unknown>;
-    if (typeof seqBlock.policy === 'string') {
-      const policyName = seqBlock.policy.toLowerCase();
+  if (parsed.sequence !== undefined && parsed.sequence !== null) {
+    if (typeof parsed.sequence === 'string') {
+      // Shorthand: allow `sequence: stability` as a bare string
+      const policyName = parsed.sequence.trim().toLowerCase();
       if (VALID_SEQUENCE_POLICIES.has(policyName)) {
         sequence = { policy: policyName as SequencePolicyName };
-      } else {
+      } else if (policyName.length > 0) {
         console.warn(
-          `[CND Pre-Parser] Unknown sequence policy "${seqBlock.policy}". ` +
+          `[CND Pre-Parser] Unknown sequence policy "${parsed.sequence}". ` +
           `Valid values: ${[...VALID_SEQUENCE_POLICIES].join(', ')}. ` +
           `Falling back to "ignore_history".`
         );
       }
+    } else if (typeof parsed.sequence === 'object' && !Array.isArray(parsed.sequence)) {
+      const seqBlock = parsed.sequence as Record<string, unknown>;
+      if (typeof seqBlock.policy === 'string') {
+        const policyName = seqBlock.policy.trim().toLowerCase();
+        if (VALID_SEQUENCE_POLICIES.has(policyName)) {
+          sequence = { policy: policyName as SequencePolicyName };
+        } else if (policyName.length > 0) {
+          console.warn(
+            `[CND Pre-Parser] Unknown sequence policy "${seqBlock.policy}". ` +
+            `Valid values: ${[...VALID_SEQUENCE_POLICIES].join(', ')}. ` +
+            `Falling back to "ignore_history".`
+          );
+        }
+      }
+    } else {
+      console.warn(
+        '[CND Pre-Parser] "sequence" should be a string or object, got:',
+        typeof parsed.sequence
+      );
     }
   }
 

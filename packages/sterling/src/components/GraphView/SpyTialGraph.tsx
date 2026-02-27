@@ -78,7 +78,7 @@ declare global {
       // Projection Transform API (pre-layout data transformation)
       applyProjectionTransform: (
         instance: any,
-        projections: Array<{ type: string; orderBy?: string }>,
+        projections: Array<{ sig: string; orderBy?: string }>,
         selections: Record<string, string>,
         options?: {
           evaluateOrderBy?: (selector: string) => string[][];
@@ -358,9 +358,11 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       if (currentProjectionConfig.length > 0 && window.CndCore.applyProjectionTransform) {
         try {
           const selectionsCopy = { ...currentProjectionSelections };
+          // spytial-core expects { sig, orderBy } — our CndProjection uses { type, orderBy }
+          const projectionsForCore = currentProjectionConfig.map(p => ({ sig: p.type, orderBy: p.orderBy }));
           const projResult = window.CndCore.applyProjectionTransform(
             alloyDataInstance,
-            currentProjectionConfig,
+            projectionsForCore,
             selectionsCopy,
             {
               evaluateOrderBy: (selector: string) => {

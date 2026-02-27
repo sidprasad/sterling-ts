@@ -97,9 +97,11 @@ const GraphLayoutDrawer = () => {
               singleSelections[typeId] = atoms[0];
             }
           }
+          // spytial-core expects { sig, orderBy } — our CndProjection uses { type, orderBy }
+          const projectionsForCore = parsedCnd.projections.map(p => ({ sig: p.type, orderBy: p.orderBy }));
           const projResult = window.CndCore.applyProjectionTransform(
             alloyDataInstance,
-            parsedCnd.projections,
+            projectionsForCore,
             singleSelections,
             {
               evaluateOrderBy: (selector: string) => {

@@ -88,9 +88,9 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
   }, [projectionData, selectedProjections, datum, dispatch]);
 
   // Handle toggling a projection atom selection
-  // In single-type mode: toggle allows multi-select
-  // In multi-type mode: clicking an atom selects only that atom (single select)
-  const handleAtomToggle = useCallback((typeId: string, atomId: string) => {
+  // Regular click: select only that atom (single select)
+  // Shift+click: toggle behavior (add/remove from selection)
+  const handleAtomToggle = useCallback((typeId: string, atomId: string, shiftKey = false) => {
     const isMultiTypeMode = projectionData.length > 1;
     const currentSelections = selectedProjections[typeId] || [];
     
@@ -102,26 +102,32 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
       // Multi-type mode: single select only - clicking selects just this atom
       newSelections = [atomId];
     } else {
-      // Single-type mode: toggle behavior for multi-select
-      if (currentSelections.includes(atomId)) {
-        // Don't allow deselecting the last atom
-        if (currentSelections.length === 1) {
-          return;
-        }
-        newSelections = currentSelections.filter(id => id !== atomId);
-      } else {
-        // Add the new atom and re-order according to projectionData.atoms order
-        const updatedSelections = [...currentSelections, atomId];
-        if (typeData?.atoms) {
-          const atomOrder = typeData.atoms.map(a => a.id);
-          newSelections = updatedSelections.sort((a, b) => {
-            const indexA = atomOrder.indexOf(a);
-            const indexB = atomOrder.indexOf(b);
-            return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
-          });
+      // Single-type mode: check for shift key
+      if (shiftKey) {
+        // Shift+click: toggle behavior for multi-select
+        if (currentSelections.includes(atomId)) {
+          // Don't allow deselecting the last atom
+          if (currentSelections.length === 1) {
+            return;
+          }
+          newSelections = currentSelections.filter(id => id !== atomId);
         } else {
-          newSelections = updatedSelections;
+          // Add the new atom and re-order according to projectionData.atoms order
+          const updatedSelections = [...currentSelections, atomId];
+          if (typeData?.atoms) {
+            const atomOrder = typeData.atoms.map(a => a.id);
+            newSelections = updatedSelections.sort((a, b) => {
+              const indexA = atomOrder.indexOf(a);
+              const indexB = atomOrder.indexOf(b);
+              return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+            });
+          } else {
+            newSelections = updatedSelections;
+          }
         }
+      } else {
+        // Regular click: single select - just select this atom
+        newSelections = [atomId];
       }
     }
 
@@ -197,7 +203,7 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
       ) : (
         <p className="text-xs text-gray-500 mb-3">
           Projecting over <span className="font-medium text-gray-700">{projectionData[0].typeName}</span>. 
-          Multiple selections show separate graphs.
+          Click to select, Shift+click to toggle. Multiple selections show separate graphs.
         </p>
       )}
 
@@ -228,7 +234,7 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
                   <button
                     key={atom.id}
                     type="button"
-                    onClick={() => handleAtomToggle(typeData.typeId, atom.id)}
+                    onClick={(e) => handleAtomToggle(typeData.typeId, atom.id, e.shiftKey)}
                     className={`
                       px-2.5 py-1 text-xs rounded-md transition-all font-medium
                       ${isSelected 

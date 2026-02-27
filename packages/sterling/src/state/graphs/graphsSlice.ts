@@ -45,6 +45,7 @@ export const {
   shapeSet,
   shapeStyleRemoved,
   shapeStyleSet,
+  temporalPolicySet,
   themeFileLoaded,
   timeIndexSet,
   timeIndexToggled

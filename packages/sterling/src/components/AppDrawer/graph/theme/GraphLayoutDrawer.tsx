@@ -178,7 +178,7 @@ const GraphLayoutDrawer = () => {
           extraBlocks.projections = parsed.projections;
         }
         if (parsed.sequence.policy !== 'ignore_history') {
-          extraBlocks.sequence = { policy: parsed.sequence.policy };
+          extraBlocks.temporal = { policy: parsed.sequence.policy };
         }
         extraCndBlocksRef.current = extraBlocks;
       }
@@ -252,7 +252,7 @@ const GraphLayoutDrawer = () => {
           extraBlocks.projections = parsed.projections;
         }
         if (parsed.sequence.policy !== 'ignore_history') {
-          extraBlocks.sequence = { policy: parsed.sequence.policy };
+          extraBlocks.temporal = { policy: parsed.sequence.policy };
         }
         extraCndBlocksRef.current = extraBlocks;
 

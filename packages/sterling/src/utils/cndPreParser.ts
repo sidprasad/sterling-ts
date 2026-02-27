@@ -15,7 +15,7 @@
  *     orderBy: next
  *   - sig: Time
  *
- * sequence:
+ * temporal:
  *   policy: stability
  *
  * constraints:
@@ -135,69 +135,91 @@ export function parseCndFile(cndSpec: string): ParsedCndFile {
   }
 
   // ── Extract projections ──────────────────────────────────────────
+  // Accept both 'projections' (array) and 'projection' (singular object)
 
   const projections: CndProjection[] = [];
 
+  // Helper to parse a single projection entry (object or string)
+  const parseSingleProjection = (entry: unknown): CndProjection | null => {
+    if (entry && typeof entry === 'object') {
+      const rawType = (entry as any).type ?? (entry as any).sig;
+      const typeName = typeof rawType === 'string' ? rawType.trim() : '';
+      if (typeName.length > 0) {
+        const proj: CndProjection = { type: typeName };
+        const rawOrderBy = (entry as any).orderBy;
+        if (typeof rawOrderBy === 'string' && rawOrderBy.trim().length > 0) {
+          proj.orderBy = rawOrderBy.trim();
+        }
+        return proj;
+      } else {
+        console.warn(
+          '[CND Pre-Parser] Skipping projection entry with missing or empty "type"/"sig":',
+          entry
+        );
+      }
+    } else if (typeof entry === 'string' && entry.trim().length > 0) {
+      return { type: entry.trim() };
+    } else {
+      console.warn('[CND Pre-Parser] Skipping invalid projection entry:', entry);
+    }
+    return null;
+  };
+
+  // 'projections:' (plural) — expects an array
   if (Array.isArray(parsed.projections)) {
     for (const entry of parsed.projections) {
-      if (entry && typeof entry === 'object') {
-        // Accept both 'type' and 'sig' keys in YAML, preferring 'type'
-        const rawType = (entry as any).type ?? (entry as any).sig;
-        const typeName = typeof rawType === 'string' ? rawType.trim() : '';
-        if (typeName.length > 0) {
-          const proj: CndProjection = { type: typeName };
-          const rawOrderBy = (entry as any).orderBy;
-          if (typeof rawOrderBy === 'string' && rawOrderBy.trim().length > 0) {
-            proj.orderBy = rawOrderBy.trim();
-          }
-          projections.push(proj);
-        } else {
-          console.warn(
-            '[CND Pre-Parser] Skipping projection entry with missing or empty "type"/"sig":',
-            entry
-          );
-        }
-      } else if (typeof entry === 'string' && entry.trim().length > 0) {
-        // Shorthand: allow bare strings as projection type names
-        // e.g. projections: ["State", "Time"]
-        projections.push({ type: entry.trim() });
-      } else {
-        console.warn('[CND Pre-Parser] Skipping invalid projection entry:', entry);
-      }
+      const proj = parseSingleProjection(entry);
+      if (proj) projections.push(proj);
     }
   } else if (parsed.projections !== undefined && parsed.projections !== null) {
-    console.warn(
-      '[CND Pre-Parser] "projections" should be an array, got:',
-      typeof parsed.projections
-    );
+    // Could be a single object written under 'projections:' instead of an array
+    const proj = parseSingleProjection(parsed.projections);
+    if (proj) projections.push(proj);
   }
 
-  // ── Extract sequence config ──────────────────────────────────────
+  // 'projection:' (singular) — expects a single object or string
+  if (parsed.projection !== undefined && parsed.projection !== null && projections.length === 0) {
+    if (Array.isArray(parsed.projection)) {
+      // User wrote an array under singular key — still handle it
+      for (const entry of parsed.projection) {
+        const proj = parseSingleProjection(entry);
+        if (proj) projections.push(proj);
+      }
+    } else {
+      const proj = parseSingleProjection(parsed.projection);
+      if (proj) projections.push(proj);
+    }
+  }
+
+  // ── Extract temporal / sequence config ───────────────────────────
+  // Accept both 'temporal' and 'sequence' as YAML keys, preferring 'temporal'.
 
   let sequence: CndSequenceConfig = { ...DEFAULT_SEQUENCE_CONFIG };
 
-  if (parsed.sequence !== undefined && parsed.sequence !== null) {
-    if (typeof parsed.sequence === 'string') {
-      // Shorthand: allow `sequence: stability` as a bare string
-      const policyName = parsed.sequence.trim().toLowerCase();
+  const temporalRaw = parsed.temporal ?? parsed.sequence;
+
+  if (temporalRaw !== undefined && temporalRaw !== null) {
+    if (typeof temporalRaw === 'string') {
+      // Shorthand: allow `temporal: stability` as a bare string
+      const policyName = temporalRaw.trim().toLowerCase();
       if (VALID_SEQUENCE_POLICIES.has(policyName)) {
         sequence = { policy: policyName as SequencePolicyName };
       } else if (policyName.length > 0) {
         console.warn(
-          `[CND Pre-Parser] Unknown sequence policy "${parsed.sequence}". ` +
+          `[CND Pre-Parser] Unknown temporal policy "${temporalRaw}". ` +
           `Valid values: ${[...VALID_SEQUENCE_POLICIES].join(', ')}. ` +
           `Falling back to "ignore_history".`
         );
       }
-    } else if (typeof parsed.sequence === 'object' && !Array.isArray(parsed.sequence)) {
-      const seqBlock = parsed.sequence as Record<string, unknown>;
+    } else if (typeof temporalRaw === 'object' && !Array.isArray(temporalRaw)) {
+      const seqBlock = temporalRaw as Record<string, unknown>;
       if (typeof seqBlock.policy === 'string') {
         const policyName = seqBlock.policy.trim().toLowerCase();
         if (VALID_SEQUENCE_POLICIES.has(policyName)) {
           sequence = { policy: policyName as SequencePolicyName };
         } else if (policyName.length > 0) {
           console.warn(
-            `[CND Pre-Parser] Unknown sequence policy "${seqBlock.policy}". ` +
+            `[CND Pre-Parser] Unknown temporal policy "${seqBlock.policy}". ` +
             `Valid values: ${[...VALID_SEQUENCE_POLICIES].join(', ')}. ` +
             `Falling back to "ignore_history".`
           );
@@ -205,8 +227,8 @@ export function parseCndFile(cndSpec: string): ParsedCndFile {
       }
     } else {
       console.warn(
-        '[CND Pre-Parser] "sequence" should be a string or object, got:',
-        typeof parsed.sequence
+        '[CND Pre-Parser] "temporal" should be a string or object, got:',
+        typeof temporalRaw
       );
     }
   }

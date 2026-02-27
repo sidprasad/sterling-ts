@@ -8,6 +8,7 @@ import { selectSelectedGenerator } from '../selectors';
 import { GraphsState } from './graphs';
 import { DEFAULT_THEME } from './graphsDefaults';
 import { validateLayouts } from './graphsReducers';
+import { parseCndFile } from '../../utils/cndPreParser';
 
 type DraftState = WritableDraft<GraphsState>;
 
@@ -55,7 +56,19 @@ function dataReceived(
       // Using generator name allows the layout to persist across instances.
       const DEFAULT_CND_SPEC = 'directives:\n  - flag: hideDisconnectedBuiltIns';
       if (!(generator in state.cndSpecByGeneratorName)) {
-        state.cndSpecByGeneratorName[generator] = alloyDatum.parsed.visualizerConfig?.cnd ?? DEFAULT_CND_SPEC;
+        const specToLoad = alloyDatum.parsed.visualizerConfig?.cnd ?? DEFAULT_CND_SPEC;
+        state.cndSpecByGeneratorName[generator] = specToLoad;
+
+        // Parse projection config and temporal policy from the initial CND spec
+        try {
+          const parsed = parseCndFile(specToLoad);
+          state.projectionConfigByGeneratorName[generator] = parsed.projections;
+          state.sequencePolicyByGeneratorName[generator] = parsed.sequence.policy;
+        } catch (err) {
+          console.error('[graphsExtraReducers] parseCndFile failed:', err);
+          state.projectionConfigByGeneratorName[generator] = [];
+          state.sequencePolicyByGeneratorName[generator] = 'ignore_history';
+        }
       }
 
       // TODO: Remove during refactor

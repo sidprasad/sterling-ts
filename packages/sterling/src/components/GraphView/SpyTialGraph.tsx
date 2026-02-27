@@ -203,6 +203,19 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   // Track the previous data instance for sequence policy continuity
   const prevInstanceRef = useRef<any>(null);
 
+  // Use refs for projection/sequence props so they don't trigger re-layout.
+  // These are derived from cndSpec (which IS a dependency), so when cndSpec
+  // changes they'll already be updated by the time loadGraph runs.  But they
+  // can also get new JS references without semantically changing (e.g. from
+  // Redux selector returning new `[]` arrays), and we must NOT re-layout for
+  // that.
+  const projectionConfigRef = useRef(projectionConfig);
+  projectionConfigRef.current = projectionConfig;
+  const sequencePolicyNameRef = useRef(sequencePolicyName);
+  sequencePolicyNameRef.current = sequencePolicyName;
+  const projectionSelectionsRef = useRef(projectionSelections);
+  projectionSelectionsRef.current = projectionSelections;
+
   // Use a ref to store the latest onLayoutStateChange callback
   // This avoids stale closure issues in event listeners
   const onLayoutStateChangeRef = useRef(onLayoutStateChange);
@@ -339,12 +352,15 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       let instanceForLayout = alloyDataInstance;
       let projectionChoices: any[] = [];
 
-      if (projectionConfig.length > 0 && window.CndCore.applyProjectionTransform) {
+      const currentProjectionConfig = projectionConfigRef.current;
+      const currentProjectionSelections = projectionSelectionsRef.current;
+
+      if (currentProjectionConfig.length > 0 && window.CndCore.applyProjectionTransform) {
         try {
-          const selectionsCopy = { ...projectionSelections };
+          const selectionsCopy = { ...currentProjectionSelections };
           const projResult = window.CndCore.applyProjectionTransform(
             alloyDataInstance,
-            projectionConfig,
+            currentProjectionConfig,
             selectionsCopy,
             {
               evaluateOrderBy: (selector: string) => {
@@ -443,12 +459,13 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         // Build render options with sequence policy support
         const renderOptions: any = {};
         const hasPriorState = priorState && priorState.positions && priorState.positions.length > 0;
+        const currentSequencePolicy = sequencePolicyNameRef.current;
 
-        if (hasPriorState && prevInstanceRef.current && sequencePolicyName && sequencePolicyName !== 'ignore_history') {
+        if (hasPriorState && prevInstanceRef.current && currentSequencePolicy && currentSequencePolicy !== 'ignore_history') {
           // Use sequence policy API for inter-step continuity
           try {
             if (typeof window.CndCore.getSequencePolicy === 'function') {
-              const policy = window.CndCore.getSequencePolicy(sequencePolicyName);
+              const policy = window.CndCore.getSequencePolicy(currentSequencePolicy);
               if (policy) {
                 renderOptions.policy = policy;
                 renderOptions.prevInstance = prevInstanceRef.current;
@@ -487,7 +504,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorState, projectionConfig, sequencePolicyName, projectionSelections]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorState]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {

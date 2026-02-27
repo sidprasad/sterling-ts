@@ -816,6 +816,22 @@ function cndSpecSet(
   }
 }
 
+/**
+ * Set the temporal (sequence) policy for a datum without re-parsing the full
+ * CND spec. Used by the temporal-policy dropdown in the Time drawer.
+ */
+function temporalPolicySet(
+  state: DraftState,
+  action: PayloadAction<{ datum: DatumParsed<any>; policy: string }>
+) {
+  const { datum, policy } = action.payload;
+  const generator = datum.generatorName ?? '';
+  const validPolicies = ['ignore_history', 'stability', 'change_emphasis', 'random_positioning'];
+  state.sequencePolicyByGeneratorName[generator] = validPolicies.includes(policy)
+    ? (policy as any)
+    : 'ignore_history';
+}
+
 function getEdgeStyleSpecUnique(
   theme: WritableDraft<SterlingTheme>,
   relation: string
@@ -928,6 +944,7 @@ export default {
   shapeSet,
   shapeStyleRemoved,
   shapeStyleSet,
+  temporalPolicySet,
   themeFileLoaded,
   timeIndexSet,
   timeIndexToggled

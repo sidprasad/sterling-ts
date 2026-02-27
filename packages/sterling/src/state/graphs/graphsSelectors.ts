@@ -3,6 +3,7 @@ import { DatumParsed } from '@/sterling-connection';
 import { Projection, SterlingTheme } from '@/sterling-theme';
 import { Matrix } from 'transformation-matrix';
 import { generateLayoutId, GraphsState } from './graphs';
+import type { CndProjection, SequencePolicyName } from '../../utils/cndPreParser';
 
 /**
  * Select a graph layout associated with a datum.
@@ -110,12 +111,40 @@ function selectSelectedTimeIndices(
   return state.selectedTimeIndicesByDatumId[datum.id] ?? [];
 }
 
+/**
+ * Select the CND-derived projection configuration for a datum.
+ * These are the projection directives parsed from the top-level `projections`
+ * block of the CND spec.
+ */
+function selectProjectionConfig(
+  state: GraphsState,
+  datum: DatumParsed<any>
+): CndProjection[] {
+  const generator = datum.generatorName ?? '';
+  return state.projectionConfigByGeneratorName[generator] ?? [];
+}
+
+/**
+ * Select the CND-derived sequence policy for a datum.
+ * Parsed from the top-level `sequence` block of the CND spec.
+ * Defaults to 'ignore_history' when not specified.
+ */
+function selectSequencePolicyName(
+  state: GraphsState,
+  datum: DatumParsed<any>
+): SequencePolicyName {
+  const generator = datum.generatorName ?? '';
+  return state.sequencePolicyByGeneratorName[generator] ?? 'ignore_history';
+}
+
 export default {
   selectGraphLayout,
   selectHiddenRelations,
   selectProjections,
+  selectProjectionConfig,
   selectSelectedProjections,
   selectSelectedTimeIndices,
+  selectSequencePolicyName,
   selectSpreadMatrix,
   selectTheme,
   selectTimeIndex,

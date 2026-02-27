@@ -1,7 +1,7 @@
 {
   "name": "sterling-layout",
   "description": "Spytial Sterling is a fork of the Sterling visualizer that encodes spatial layout.",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "main": "index.js",
   "author": "Siddhartha Prasad",
   "license": "MIT",
@@ -40,6 +40,7 @@
     "framer-motion": "^4",
     "fs": "^0.0.1-security",
     "immer": "^9.0.7",
+    "js-yaml": "^4.1.1",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "monaco-editor": "^0.31.1",
@@ -50,7 +51,7 @@
     "react-monaco-editor": "^0.47.0",
     "react-redux": "^7.2.6",
     "redux": "^4.1.2",
-    "spytial-core": "^1.9.0",
+    "spytial-core": "^1.9.1-beta.5",
     "transformation-matrix": "^2.10.0",
     "ts-is-present": "^1.2.2",
     "uuid": "^9.0.0"
@@ -72,6 +73,7 @@
     "@types/d3-shape": "^3.0.2",
     "@types/dagre": "^0.7.46",
     "@types/jest": "^29.4.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/lodash": "^4.14.191",
     "@types/lodash-es": "^4.17.6",
     "@types/react": "^18.2.0",

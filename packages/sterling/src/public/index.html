@@ -6,6 +6,14 @@
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script src="vendor/spytial-core-complete.global.js"></script>
   <script src="vendor/react-component-integration.global.js"></script>
+  <!-- Bridge: merge react-component-integration exports (window.CnDCore)
+       into the core library's global (window.CndCore) so Sterling can use
+       a single namespace for all spytial-core APIs. -->
+  <script>
+    if (typeof CndCore !== 'undefined' && typeof CnDCore !== 'undefined') {
+      Object.keys(CnDCore).forEach(function(k) { CndCore[k] = CnDCore[k]; });
+    }
+  </script>
   <link rel="stylesheet" href="vendor/react-component-integration.css" />
 </head>
 <body>

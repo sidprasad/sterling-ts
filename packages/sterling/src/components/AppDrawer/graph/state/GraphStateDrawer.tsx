@@ -2,6 +2,7 @@ import { PaneTitle } from '@/sterling-ui';
 import { useSterlingSelector } from '../../../../state/hooks';
 import { selectActiveDatum, selectDatumIsTrace } from '../../../../state/selectors';
 import { TimeSection } from './time/TimeSection';
+import { TemporalPolicySection } from './temporal/TemporalPolicySection';
 
 const GraphStateDrawer = () => {
   const activeDatum = useSterlingSelector(selectActiveDatum);
@@ -13,6 +14,9 @@ const GraphStateDrawer = () => {
   
   return (
     <div className='absolute inset-0 flex flex-col overflow-y-auto'>
+      {/* Temporal policy selector — always visible */}
+      <TemporalPolicySection datum={activeDatum} />
+
       {isTrace ? (
         <TimeSection datum={activeDatum} />
       ) : (

@@ -1,6 +1,7 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { LayoutState, TransformInfo, NodePositionHint } from './SpyTialGraph';
+import { parseCndFile, CndProjection, SequencePolicyName } from '../../utils/cndPreParser';
 
 // Use the Window type declaration from SpyTialGraph.tsx - no need to re-declare
 
@@ -111,13 +112,44 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
-      // Parse layout specification
+      // Parse layout specification using pre-parser to strip projections/sequence blocks
+      const parsedCnd = parseCndFile(cndSpec || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(cndSpec || '');
+        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch (parseError: any) {
         console.error(`[Projection ${atomLabel}] Layout spec parse error:`, parseError);
         layoutSpec = window.CndCore.parseLayoutSpec('');
+      }
+
+      // Apply projection transform for THIS specific atom
+      // This replaces the old pattern of passing projections to generateLayout()
+      let instanceForLayout = alloyDataInstance;
+      if (projectionType && atomId && window.CndCore.applyProjectionTransform) {
+        try {
+          const projConfig: CndProjection[] = [{ type: projectionType }];
+          const selections = { [projectionType]: atomId };
+          const projResult = window.CndCore.applyProjectionTransform(
+            alloyDataInstance,
+            projConfig,
+            selections,
+            {
+              evaluateOrderBy: (selector: string) => {
+                try {
+                  return sgraphEvaluator.evaluate(selector).selectedTwoples();
+                } catch {
+                  return [];
+                }
+              }
+            }
+          );
+          if (projResult && projResult.instance) {
+            instanceForLayout = projResult.instance;
+          }
+        } catch (err: any) {
+          console.error(`[Projection ${atomLabel}] Projection transform failed:`, err);
+          // Fall back to un-projected instance
+        }
       }
 
       // Create LayoutInstance
@@ -129,11 +161,8 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
         ENABLE_ALIGNMENT_EDGES
       );
 
-      // Generate layout with THIS specific projection
-      // projectionType should be the type ID (e.g., "Position") that SpyTial expects
-      const projections = projectionType ? { [projectionType]: atomId } : {};
-      console.log(`[SingleProjectionPane ${atomLabel}] Generating with projection:`, projectionType, '->', atomId, 'Full projections:', projections);
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
+      // Generate layout with single-arg (projection already applied via transform)
+      const layoutResult = layoutInstance.generateLayout(instanceForLayout);
 
       if (layoutResult.error) {
         console.error(`[Projection ${atomLabel}] Layout generation error:`, layoutResult.error);
@@ -302,10 +331,11 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
-      // Parse empty layout spec to get projection data
-      const layoutSpec = window.CndCore.parseLayoutSpec('');
+      // Parse layout spec using pre-parser
+      const parsedCnd = parseCndFile('');
+      const layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
       const layoutInstance = new window.CndCore.LayoutInstance(layoutSpec, sgraphEvaluator, 0, true);
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, {});
+      const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
 
       if (layoutResult.projectionData) {
         setProjectionData(layoutResult.projectionData);

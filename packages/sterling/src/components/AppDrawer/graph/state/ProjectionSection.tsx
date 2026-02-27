@@ -1,8 +1,9 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectCnDSpec, selectSelectedProjections } from '../../../../state/selectors';
+import { selectCnDSpec, selectSelectedProjections, selectProjectionConfig } from '../../../../state/selectors';
 import { cndSpecSet, projectionAtomToggled, selectedProjectionsSet } from '../../../../state/graphs/graphsSlice';
+import type { CndProjection } from '../../../../utils/cndPreParser';
 
 interface ProjectionTypeData {
   typeId: string;
@@ -22,10 +23,18 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
 
   const cndSpec = useSterlingSelector((state) => selectCnDSpec(state, datum)) || '';
 
+  // CND-derived projection config from Redux (parsed from .cnd file)
+  const cndProjectionConfig = useSterlingSelector((state) =>
+    selectProjectionConfig(state, datum)
+  ) || [];
+
   // Selected projections from Redux
   const selectedProjections = useSterlingSelector((state) =>
     selectSelectedProjections(state, datum)
   );
+
+  // If CND spec defines projections, show a note about the source
+  const hasCndProjections = cndProjectionConfig.length > 0;
 
   // Listen for projection data updates and reset state when datum changes
   useEffect(() => {
@@ -79,9 +88,9 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
   }, [projectionData, selectedProjections, datum, dispatch]);
 
   // Handle toggling a projection atom selection
-  // In single-type mode: toggle allows multi-select
-  // In multi-type mode: clicking an atom selects only that atom (single select)
-  const handleAtomToggle = useCallback((typeId: string, atomId: string) => {
+  // Regular click: select only that atom (single select)
+  // Shift+click: toggle behavior (add/remove from selection)
+  const handleAtomToggle = useCallback((typeId: string, atomId: string, shiftKey = false) => {
     const isMultiTypeMode = projectionData.length > 1;
     const currentSelections = selectedProjections[typeId] || [];
     
@@ -93,26 +102,32 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
       // Multi-type mode: single select only - clicking selects just this atom
       newSelections = [atomId];
     } else {
-      // Single-type mode: toggle behavior for multi-select
-      if (currentSelections.includes(atomId)) {
-        // Don't allow deselecting the last atom
-        if (currentSelections.length === 1) {
-          return;
-        }
-        newSelections = currentSelections.filter(id => id !== atomId);
-      } else {
-        // Add the new atom and re-order according to projectionData.atoms order
-        const updatedSelections = [...currentSelections, atomId];
-        if (typeData?.atoms) {
-          const atomOrder = typeData.atoms.map(a => a.id);
-          newSelections = updatedSelections.sort((a, b) => {
-            const indexA = atomOrder.indexOf(a);
-            const indexB = atomOrder.indexOf(b);
-            return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
-          });
+      // Single-type mode: check for shift key
+      if (shiftKey) {
+        // Shift+click: toggle behavior for multi-select
+        if (currentSelections.includes(atomId)) {
+          // Don't allow deselecting the last atom
+          if (currentSelections.length === 1) {
+            return;
+          }
+          newSelections = currentSelections.filter(id => id !== atomId);
         } else {
-          newSelections = updatedSelections;
+          // Add the new atom and re-order according to projectionData.atoms order
+          const updatedSelections = [...currentSelections, atomId];
+          if (typeData?.atoms) {
+            const atomOrder = typeData.atoms.map(a => a.id);
+            newSelections = updatedSelections.sort((a, b) => {
+              const indexA = atomOrder.indexOf(a);
+              const indexB = atomOrder.indexOf(b);
+              return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+            });
+          } else {
+            newSelections = updatedSelections;
+          }
         }
+      } else {
+        // Regular click: single select - just select this atom
+        newSelections = [atomId];
       }
     }
 
@@ -168,11 +183,18 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
     <div className="mx-2 my-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold text-gray-800">Projections</span>
-        {!isMultiTypeMode && (
-          <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-            Multi-select
-          </span>
-        )}
+        <div className="flex gap-1">
+          {hasCndProjections && (
+            <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+              CND
+            </span>
+          )}
+          {!isMultiTypeMode && (
+            <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+              Multi-select
+            </span>
+          )}
+        </div>
       </div>
       {isMultiTypeMode ? (
         <p className="text-xs text-gray-500 mb-3">
@@ -181,7 +203,7 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
       ) : (
         <p className="text-xs text-gray-500 mb-3">
           Projecting over <span className="font-medium text-gray-700">{projectionData[0].typeName}</span>. 
-          Multiple selections show separate graphs.
+          Click to select, Shift+click to toggle. Multiple selections show separate graphs.
         </p>
       )}
 
@@ -212,7 +234,7 @@ const ProjectionSection = ({ datum }: ProjectionSectionProps) => {
                   <button
                     key={atom.id}
                     type="button"
-                    onClick={() => handleAtomToggle(typeData.typeId, atom.id)}
+                    onClick={(e) => handleAtomToggle(typeData.typeId, atom.id, e.shiftKey)}
                     className={`
                       px-2.5 py-1 text-xs rounded-md transition-all font-medium
                       ${isSelected 

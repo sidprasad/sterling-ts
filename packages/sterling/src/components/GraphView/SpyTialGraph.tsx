@@ -1,5 +1,6 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { parseCndFile, type CndProjection, type SequencePolicyName } from '../../utils/cndPreParser';
 
 /**
  * The signature label that Forge uses to indicate no more instances are available.
@@ -62,15 +63,39 @@ declare global {
         instanceNumber: number,
         enableAlignmentEdges: boolean
       ) => {
-        generateLayout: (dataInstance: any, projections: object) => {
+        generateLayout: (dataInstance: any) => {
           layout: any;
           projectionData?: any[];
+          selectorErrors?: any[];
           error?: {
+            type?: string;
             message: string;
             errorMessages?: any;
             overlappingNodes?: any;
           };
         };
+      };
+      // Projection Transform API (pre-layout data transformation)
+      applyProjectionTransform: (
+        instance: any,
+        projections: Array<{ sig: string; orderBy?: string }>,
+        selections: Record<string, string>,
+        options?: {
+          evaluateOrderBy?: (selector: string) => string[][];
+          onOrderByError?: (selector: string, error: unknown) => void;
+        }
+      ) => {
+        instance: any;
+        choices: Array<{
+          type: string;
+          projectedAtom: string;
+          atoms: string[];
+        }>;
+      };
+      // Sequence Policy API
+      getSequencePolicy: (name: string) => {
+        readonly name: string;
+        apply: (context: any) => any;
       };
       // Synthesis API
       synthesizeAtomSelector: (
@@ -100,6 +125,8 @@ declare global {
     showGeneralError?: (message: string) => void;
     showPositionalError?: (errorMessages: any) => void;
     showGroupOverlapError?: (message: string) => void;
+    showHiddenNodeConflict?: (errorMessages: any) => void;
+    showSelectorErrors?: (errors: any[]) => void;
     clearAllErrors?: () => void;
     // Projection control functions
     updateProjectionData?: (projectionData: any[]) => void;
@@ -111,7 +138,13 @@ declare global {
 declare global {
   interface HTMLElementTagNameMap {
     'webcola-cnd-graph': HTMLElement & {
-      renderLayout: (layout: any, options?: { priorState?: LayoutState }) => Promise<void>;
+      renderLayout: (layout: any, options?: {
+        priorState?: LayoutState;
+        policy?: { readonly name: string; apply: (context: any) => any };
+        prevInstance?: any;
+        currInstance?: any;
+        priorPositions?: LayoutState;
+      }) => Promise<void>;
       getLayoutState?: () => LayoutState;
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
@@ -137,6 +170,12 @@ interface SpyTialGraphProps {
   synthesisMode?: boolean;
   /** Callback to receive the AlloyDataInstance when it's created (for synthesis) */
   onDataInstanceCreated?: (dataInstance: any) => void;
+  /** CND-derived projection configuration */
+  projectionConfig?: CndProjection[];
+  /** CND-derived sequence policy name */
+  sequencePolicyName?: SequencePolicyName;
+  /** User's current projection atom selections (type → atom ID) */
+  projectionSelections?: Record<string, string>;
 }
 
 const SpyTialGraph = (props: SpyTialGraphProps) => {
@@ -147,7 +186,10 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     priorState, 
     onLayoutStateChange,
     synthesisMode = false,
-    onDataInstanceCreated
+    onDataInstanceCreated,
+    projectionConfig = [],
+    sequencePolicyName = 'ignore_history',
+    projectionSelections = {}
   } = props;
   // Separate ref for the graph container - this div is NOT managed by React's children
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -158,6 +200,22 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   const layoutRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
   
+  // Track the previous data instance for sequence policy continuity
+  const prevInstanceRef = useRef<any>(null);
+
+  // Use refs for projection/sequence props so they don't trigger re-layout.
+  // These are derived from cndSpec (which IS a dependency), so when cndSpec
+  // changes they'll already be updated by the time loadGraph runs.  But they
+  // can also get new JS references without semantically changing (e.g. from
+  // Redux selector returning new `[]` arrays), and we must NOT re-layout for
+  // that.
+  const projectionConfigRef = useRef(projectionConfig);
+  projectionConfigRef.current = projectionConfig;
+  const sequencePolicyNameRef = useRef(sequencePolicyName);
+  sequencePolicyNameRef.current = sequencePolicyName;
+  const projectionSelectionsRef = useRef(projectionSelections);
+  projectionSelectionsRef.current = projectionSelections;
+
   // Use a ref to store the latest onLayoutStateChange callback
   // This avoids stale closure issues in event listeners
   const onLayoutStateChangeRef = useRef(onLayoutStateChange);
@@ -168,7 +226,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     if (isCndCoreReady) return;
 
     const checkCndCore = () => {
-      if (window.CndCore?.parseLayoutSpec) {
+      if (typeof window.CndCore?.parseLayoutSpec === 'function') {
         console.log('CndCore is now available');
         setIsCndCoreReady(true);
         return true;
@@ -263,22 +321,21 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
       // Notify parent if in synthesis mode - pass raw instance data (not class) for Redux storage
       if (synthesisMode && onDataInstanceCreated) {
-        // Pass the raw instance data that can be used to recreate AlloyDataInstance later
-        // We can't store AlloyDataInstance in Redux because class methods don't survive serialization
         onDataInstanceCreated(alloyDatum.instances[instanceIndex]);
       }
 
       // Step 3: Create SGraphQueryEvaluator for layout generation
+      // IMPORTANT: Initialize with the ORIGINAL (un-projected) instance so that
+      // orderBy selectors and layout selectors can see all atoms.
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
-      sgraphEvaluator.initialize({ sourceData: alloyDataInstance }); // Pass AlloyDataInstance, not raw XML
-      
-      //console.log('Created SGraphQueryEvaluator for layout generation');
+      sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
       // Step 4: Parse layout specification
-      // Note: An empty cndSpec is valid and has semantic meaning (no constraints/directives)
+      // Use parseCndFile to extract only the layout YAML (stripping projections/sequence blocks)
+      const parsedCnd = parseCndFile(cndSpec || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(cndSpec || '');
+        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
         if (window.clearAllErrors) {
           window.clearAllErrors();
         }
@@ -287,11 +344,57 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         if (window.showParseError) {
           window.showParseError(parseError.message, 'Layout Specification');
         }
-        // Continue with empty layout spec on parse error
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
 
-      // Step 5: Create LayoutInstance with SGraphQueryEvaluator
+      // Step 5: Apply projection transform (pre-layout data transformation)
+      // This replaces the old pattern of passing projections to generateLayout()
+      let instanceForLayout = alloyDataInstance;
+      let projectionChoices: any[] = [];
+
+      const currentProjectionConfig = projectionConfigRef.current;
+      const currentProjectionSelections = projectionSelectionsRef.current;
+
+      if (currentProjectionConfig.length > 0 && window.CndCore.applyProjectionTransform) {
+        try {
+          const selectionsCopy = { ...currentProjectionSelections };
+          // spytial-core expects { sig, orderBy } — our CndProjection uses { type, orderBy }
+          const projectionsForCore = currentProjectionConfig.map(p => ({ sig: p.type, orderBy: p.orderBy }));
+          const projResult = window.CndCore.applyProjectionTransform(
+            alloyDataInstance,
+            projectionsForCore,
+            selectionsCopy,
+            {
+              evaluateOrderBy: (selector: string) => {
+                try {
+                  return sgraphEvaluator.evaluate(selector).selectedTwoples();
+                } catch {
+                  return [];
+                }
+              },
+              onOrderByError: (selector: string, error: unknown) => {
+                console.warn(`[SpyTialGraph] orderBy evaluation failed for "${selector}":`, error);
+              }
+            }
+          );
+          if (projResult && projResult.instance) {
+            instanceForLayout = projResult.instance;
+          }
+          if (projResult && Array.isArray(projResult.choices)) {
+            projectionChoices = projResult.choices;
+          }
+        } catch (err: any) {
+          console.error('Projection transform failed:', err);
+          // Fall back to un-projected instance
+        }
+      }
+
+      // Update projection controls with projection choices
+      if (window.updateProjectionData) {
+        window.updateProjectionData(projectionChoices);
+      }
+
+      // Step 6: Create LayoutInstance and generate layout
       const ENABLE_ALIGNMENT_EDGES = true;
       const instanceNumber = 0;
       const layoutInstance = new window.CndCore.LayoutInstance(
@@ -301,25 +404,28 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         ENABLE_ALIGNMENT_EDGES
       );
 
-      // Step 6: Generate layout
-      const projections = window.currentProjections || {};
-      console.log('Using projections:', projections);
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, projections);
+      const layoutResult = layoutInstance.generateLayout(instanceForLayout);
 
-      // Update projection controls with projection data
-      // IMPORTANT: Always call updateProjectionData - if projectionData is empty/undefined,
-      // we need to clear the projection UI so the view resets to single graph mode
-      if (window.updateProjectionData) {
-        const projectionData = layoutResult.projectionData || [];
-        console.log('Updating projection data:', projectionData);
-        window.updateProjectionData(projectionData);
+      // Check for selector errors
+      if (layoutResult.selectorErrors && layoutResult.selectorErrors.length > 0) {
+        console.warn('Selector errors:', layoutResult.selectorErrors);
+        if (window.showSelectorErrors) {
+          window.showSelectorErrors(layoutResult.selectorErrors);
+        }
+        if (graphElementRef.current) {
+          graphElementRef.current.setAttribute('unsat', '');
+        }
+        setIsLoading(false);
+        return;
       }
 
       // Check for layout errors
       if (layoutResult.error) {
         console.error('Layout generation error:', layoutResult.error);
         
-        if (layoutResult.error.errorMessages) {
+        if (layoutResult.error.type === 'hidden-node-conflict' && window.showHiddenNodeConflict) {
+          window.showHiddenNodeConflict(layoutResult.error.errorMessages);
+        } else if (layoutResult.error.errorMessages) {
           if (window.showPositionalError) {
             window.showPositionalError(layoutResult.error.errorMessages);
           } else {
@@ -339,7 +445,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
           }
         }
 
-        // Mark as unsat if there's an error
         if (graphElementRef.current) {
           graphElementRef.current.setAttribute('unsat', '');
         }
@@ -348,29 +453,51 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Store the layout for reset functionality
       layoutRef.current = layoutResult.layout;
 
-      // Step 7: Render the layout with prior state for temporal continuity
+      // Step 7: Render the layout with sequence policy for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
-        // Log the nodes in the new layout
-        const newLayoutNodeIds = layoutResult.layout.nodes?.map((n: any) => n.id || n.name || n.label) || [];
-        //console.log('Nodes in new layout:', newLayoutNodeIds);
-        
-        // Check if we have prior state to use
+        // Clear unsat state on success
+        graphElementRef.current.removeAttribute('unsat');
+
+        // Build render options with sequence policy support
+        const renderOptions: any = {};
         const hasPriorState = priorState && priorState.positions && priorState.positions.length > 0;
-        const renderOptions = hasPriorState ? { priorState } : undefined;
-        
-        // Debug: Check which prior position IDs match new layout node IDs
-        if (hasPriorState && priorState) {
-          const priorIds = priorState.positions.map((p: NodePositionHint) => p.id);
-          const matchingIds = priorIds.filter((id: string) => newLayoutNodeIds.includes(id));
-          // console.log('Prior position IDs:', priorIds);
-          // console.log('Matching IDs between prior positions and new layout:', matchingIds);
-          // console.log(`Match rate: ${matchingIds.length}/${newLayoutNodeIds.length} nodes have prior positions`);
+        const currentSequencePolicy = sequencePolicyNameRef.current;
+
+        if (hasPriorState && prevInstanceRef.current && currentSequencePolicy && currentSequencePolicy !== 'ignore_history') {
+          // Use sequence policy API for inter-step continuity
+          try {
+            if (typeof window.CndCore.getSequencePolicy === 'function') {
+              const policy = window.CndCore.getSequencePolicy(currentSequencePolicy);
+              if (policy) {
+                renderOptions.policy = policy;
+                renderOptions.prevInstance = prevInstanceRef.current;
+                renderOptions.currInstance = alloyDataInstance;
+                renderOptions.priorPositions = priorState;
+              } else {
+                // Policy lookup returned null/undefined — fall back to simple prior state
+                renderOptions.priorState = priorState;
+              }
+            } else {
+              // getSequencePolicy not available — fall back to simple prior state
+              renderOptions.priorState = priorState;
+            }
+          } catch (err) {
+            console.warn('[SpyTialGraph] Failed to get sequence policy:', err);
+            // Fall back to simple prior state on error
+            renderOptions.priorState = priorState;
+          }
+        } else if (hasPriorState) {
+          // Fallback: simple prior state passing (ignore_history / no policy)
+          renderOptions.priorState = priorState;
         }
-        
-        //console.log('Rendering with prior state:', hasPriorState ? priorState.positions.length + ' nodes' : 'none');
-        
-        // Render - the layout-complete event will capture final positions
-        await graphElementRef.current.renderLayout(layoutResult.layout, renderOptions);
+
+        await graphElementRef.current.renderLayout(
+          layoutResult.layout,
+          Object.keys(renderOptions).length > 0 ? renderOptions : undefined
+        );
+
+        // Track the current instance for next step's sequence policy
+        prevInstanceRef.current = alloyDataInstance;
       }
 
       setIsLoading(false);

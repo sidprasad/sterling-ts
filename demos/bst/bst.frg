@@ -1,5 +1,7 @@
 #lang forge
 
+option run_sterling "bst.cnd"
+
 /**
 This is a simple Alloy model of binary search trees (BSTs).
 */
@@ -23,7 +25,7 @@ pred bst {
     
 }
 
-run {bst} for exactly 1 Tree , exactly 1 Int
+run {bst} 
 
 
 

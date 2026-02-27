@@ -4,6 +4,7 @@ import { DatumParsed } from '@/sterling-connection';
 import { Projection, SterlingTheme } from '@/sterling-theme';
 import { WritableDraft } from 'immer/dist/types/types-external';
 import { Matrix } from 'transformation-matrix';
+import type { CndProjection, SequencePolicyName } from '../../utils/cndPreParser';
 
 export interface GraphsState {
   layoutsByDatumId: Record<
@@ -50,6 +51,18 @@ export interface GraphsState {
    * When multiple indices are selected, multiple graphs are shown side-by-side.
    */
   selectedTimeIndicesByDatumId: Record<string, number[]>;
+
+  /**
+   * CND-derived projection configurations by generator name.
+   * Parsed from the top-level `projections` block of the CND spec.
+   */
+  projectionConfigByGeneratorName: Record<string, CndProjection[]>;
+
+  /**
+   * CND-derived sequence policy by generator name.
+   * Parsed from the top-level `sequence` block of the CND spec.
+   */
+  sequencePolicyByGeneratorName: Record<string, SequencePolicyName>;
 }
 
 export interface GraphData {
@@ -98,7 +111,9 @@ export function newGraphsState(): GraphsState {
     hiddenByDatumId: {},
     cndSpecByGeneratorName: {},
     selectedProjectionsByGeneratorName: {},
-    selectedTimeIndicesByDatumId: {}
+    selectedTimeIndicesByDatumId: {},
+    projectionConfigByGeneratorName: {},
+    sequencePolicyByGeneratorName: {}
   };
 }
 

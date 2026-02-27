@@ -1,8 +1,36 @@
 import { PaneTitle } from '@/sterling-ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hooks';
-import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex } from '../../../../state/selectors';
+import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex, selectProjectionConfig, selectSequencePolicyName } from '../../../../state/selectors';
 import { cndSpecSet, selectedProjectionsSet } from '../../../../state/graphs/graphsSlice';
+import { parseCndFile } from '../../../../utils/cndPreParser';
+import * as yaml from 'js-yaml';
+
+/**
+ * Re-combine a layout-only YAML string with previously-extracted
+ * projections/sequence blocks into a single CND spec string.
+ */
+function rebuildFullCndSpec(
+  layoutYaml: string,
+  extraBlocks: Record<string, unknown>
+): string {
+  // Parse the layout YAML to merge with extra blocks
+  let layoutObj: Record<string, unknown> = {};
+  if (layoutYaml && layoutYaml.trim()) {
+    try {
+      const parsed = yaml.load(layoutYaml);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        layoutObj = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // If layout YAML can't be parsed, just return it as-is
+      return layoutYaml;
+    }
+  }
+  const merged = { ...extraBlocks, ...layoutObj };
+  if (Object.keys(merged).length === 0) return '';
+  return yaml.dump(merged, { lineWidth: -1 });
+}
 
 const GraphLayoutDrawer = () => {
   const dispatch = useSterlingDispatch();
@@ -11,6 +39,10 @@ const GraphLayoutDrawer = () => {
   const errorMountRef = useRef<HTMLDivElement>(null);
   const [isEditorMounted, setIsEditorMounted] = useState(false);
   const [isErrorMounted, setIsErrorMounted] = useState(false);
+
+  // Preserve the projections/sequence blocks that were stripped from the
+  // editor so we can merge them back when "Apply Layout" is clicked.
+  const extraCndBlocksRef = useRef<Record<string, unknown>>({});
 
   /** Load from XML (if provided) once. */
   const preloadedSpec = useSterlingSelector((state) => datum ? selectCnDSpec(state, datum) : undefined);
@@ -35,9 +67,11 @@ const GraphLayoutDrawer = () => {
       const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
+      // Use parseCndFile to strip projection/sequence blocks before passing to parseLayoutSpec
+      const parsedCnd = parseCndFile(specText || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(specText || '');
+        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch {
         layoutSpec = window.CndCore.parseLayoutSpec('');
       }
@@ -49,14 +83,58 @@ const GraphLayoutDrawer = () => {
         true
       );
 
-      const layoutResult = layoutInstance.generateLayout(alloyDataInstance, window.currentProjections || {});
-      if (window.updateProjectionData) {
-        window.updateProjectionData(layoutResult.projectionData || []);
+      // Single-arg generateLayout (projections handled via applyProjectionTransform elsewhere)
+      const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
+
+      // If CND spec has projections, use applyProjectionTransform to get choices
+      if (parsedCnd.projections.length > 0 && typeof window.CndCore.applyProjectionTransform === 'function') {
+        try {
+          // Convert selectedProjections (Record<string, string[]>) to Record<string, string>
+          // by taking the first selected atom per type
+          const singleSelections: Record<string, string> = {};
+          for (const [typeId, atoms] of Object.entries(selectedProjections)) {
+            if (Array.isArray(atoms) && atoms.length > 0) {
+              singleSelections[typeId] = atoms[0];
+            }
+          }
+          // spytial-core expects { sig, orderBy } — our CndProjection uses { type, orderBy }
+          const projectionsForCore = parsedCnd.projections.map(p => ({ sig: p.type, orderBy: p.orderBy }));
+          const projResult = window.CndCore.applyProjectionTransform(
+            alloyDataInstance,
+            projectionsForCore,
+            singleSelections,
+            {
+              evaluateOrderBy: (selector: string) => {
+                try {
+                  return sgraphEvaluator.evaluate(selector).selectedTwoples();
+                } catch {
+                  return [];
+                }
+              }
+            }
+          );
+          if (window.updateProjectionData) {
+            const choices = (projResult && Array.isArray(projResult.choices)) ? projResult.choices : [];
+            window.updateProjectionData(choices);
+          }
+        } catch (err) {
+          console.error('Failed to get projection choices:', err);
+          if (window.updateProjectionData) {
+            window.updateProjectionData([]);
+          }
+        }
+      } else {
+        if (window.updateProjectionData) {
+          const projData = (layoutResult && Array.isArray(layoutResult.projectionData))
+            ? layoutResult.projectionData
+            : [];
+          window.updateProjectionData(projData);
+        }
       }
     } catch (err) {
       console.error('Failed to refresh projection data:', err);
     }
-  }, [datum, timeIndex]);
+  }, [datum, timeIndex, selectedProjections]);
 
   // Load Bootstrap for SpyTial UI
   useEffect(() => {
@@ -88,10 +166,27 @@ const GraphLayoutDrawer = () => {
   useEffect(() => {
     if (cndEditorRef.current && !isEditorMounted && datum) {
       const defaultSpec = 'directives:\n  - flag: hideDisconnectedBuiltIns';
-      const initialSpec = (preloadedSpec && preloadedSpec !== '') ? preloadedSpec : defaultSpec;
+
+      // Strip projections/sequence blocks before passing to SpyTial's editor,
+      // which only understands constraints/directives.
+      let editorInitialSpec = defaultSpec;
+      if (preloadedSpec && preloadedSpec !== '') {
+        const parsed = parseCndFile(preloadedSpec);
+        editorInitialSpec = parsed.layoutYaml || defaultSpec;
+
+        // Stash the extra blocks so we can merge them back on apply
+        const extraBlocks: Record<string, unknown> = {};
+        if (parsed.projections.length > 0) {
+          extraBlocks.projections = parsed.projections;
+        }
+        if (parsed.sequence.policy !== 'ignore_history') {
+          extraBlocks.temporal = { policy: parsed.sequence.policy };
+        }
+        extraCndBlocksRef.current = extraBlocks;
+      }
       
       const options: CndLayoutInterfaceOptions = {
-        initialYamlValue: initialSpec,
+        initialYamlValue: editorInitialSpec,
         initialDirectives: (preloadedSpec && preloadedSpec !== '') ? undefined : [{ flag: 'hideDisconnectedBuiltIns' }]
       };
 
@@ -113,8 +208,11 @@ const GraphLayoutDrawer = () => {
     e.preventDefault();
     if (!datum) return;
 
-    const cndSpecText = window.getCurrentCNDSpecFromReact?.() || '';
-    refreshProjectionData(cndSpecText);
+    // The editor only contains layout YAML (constraints/directives).
+    // Merge back any projections/sequence blocks that were stripped.
+    const editorText = window.getCurrentCNDSpecFromReact?.() || '';
+    const fullCndSpec = rebuildFullCndSpec(editorText, extraCndBlocksRef.current);
+    refreshProjectionData(fullCndSpec);
 
     // Collapse to single-graph view before re-applying layout.
     if (!window.currentProjections) {
@@ -135,7 +233,7 @@ const GraphLayoutDrawer = () => {
       window.clearAllErrors();
     }
     
-    dispatch(cndSpecSet({ datum, spec: cndSpecText }));
+    dispatch(cndSpecSet({ datum, spec: fullCndSpec }));
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +244,20 @@ const GraphLayoutDrawer = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
+        // The full file may contain projections/sequence blocks.
+        // Store the full spec in Redux (cndSpecSet will parse it),
+        // and update the extra-blocks ref so future Apply Layout
+        // calls preserve them.
+        const parsed = parseCndFile(text);
+        const extraBlocks: Record<string, unknown> = {};
+        if (parsed.projections.length > 0) {
+          extraBlocks.projections = parsed.projections;
+        }
+        if (parsed.sequence.policy !== 'ignore_history') {
+          extraBlocks.temporal = { policy: parsed.sequence.policy };
+        }
+        extraCndBlocksRef.current = extraBlocks;
+
         refreshProjectionData(text);
         dispatch(cndSpecSet({ datum, spec: text }));
       };

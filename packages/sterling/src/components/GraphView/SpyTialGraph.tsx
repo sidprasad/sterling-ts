@@ -325,6 +325,10 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
           window.showSelectorErrors(layoutResult.selectorErrors);
         }
         if (graphElementRef.current) {
+          // Clear stale graph (alignment edges etc.) before showing error state
+          if (graphElementRef.current.clear) {
+            graphElementRef.current.clear();
+          }
           graphElementRef.current.setAttribute('unsat', '');
         }
         setIsLoading(false);
@@ -367,6 +371,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
       // Step 7: Render the layout with sequence policy for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
+        // Clear stale graph state (including leftover alignment edges) before
+        // rendering the new layout, so nothing from the prior temporal step bleeds through.
+        if (graphElementRef.current.clear) {
+          graphElementRef.current.clear();
+        }
+
         // Clear unsat state on success
         graphElementRef.current.removeAttribute('unsat');
 

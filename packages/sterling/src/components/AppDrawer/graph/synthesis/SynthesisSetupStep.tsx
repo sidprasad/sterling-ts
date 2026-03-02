@@ -23,6 +23,7 @@ import {
   synthesisLoadError
 } from '../../../../state/synthesis/synthesisSlice';
 import { SelectorType } from '../../../../state/synthesis/synthesis';
+import { getSpytialCore } from '../../../../utils/spytialCore';
 
 /**
  * The signature label that Forge uses to indicate no more instances are available.
@@ -56,7 +57,8 @@ export const SynthesisSetupStep = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleStart = async () => {
-    if (!datum || !window.CndCore) return;
+    const core = getSpytialCore();
+    if (!datum || !core) return;
 
     setIsLoading(true);
     dispatch(enterSynthesisMode({ numInstances, selectorType }));
@@ -64,14 +66,14 @@ export const SynthesisSetupStep = () => {
     try {
       // Start with the current instance
       const alloyXml = datum.data;
-      const parsedDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
+      const parsedDatum = core.AlloyInstance.parseAlloyXML(alloyXml);
 
       if (!parsedDatum.instances || parsedDatum.instances.length === 0) {
         throw new Error('No instances found in Alloy XML');
       }
 
       // Load just the first instance from current datum
-      const firstInstance = new window.CndCore.AlloyDataInstance(
+      const firstInstance = new core.AlloyDataInstance(
         parsedDatum.instances[0]
       );
 

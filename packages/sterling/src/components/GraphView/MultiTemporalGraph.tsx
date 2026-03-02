@@ -1,6 +1,7 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { parseCndFile, SequencePolicyName } from '../../utils/cndPreParser';
+import { getSpytialCore, hasSpytialCore } from '../../utils/spytialCore';
 
 /**
  * The signature label that Forge uses to indicate no more instances are available.
@@ -66,7 +67,8 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
     setIsLoading(true);
     setError(null);
 
-    if (typeof window.CndCore === 'undefined') {
+    const core = getSpytialCore();
+    if (!core) {
       setError('CnD Core library is not available.');
       setIsLoading(false);
       return;
@@ -79,7 +81,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
       }
 
       // Parse Alloy XML
-      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
+      const alloyDatum = core.AlloyInstance.parseAlloyXML(alloyXml);
       
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
         throw new Error('No instances found in Alloy XML');
@@ -87,7 +89,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
 
       // Create AlloyDataInstance for THIS specific time index
       const instanceIndex = Math.min(timeIndex, alloyDatum.instances.length - 1);
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+      const alloyDataInstance = new core.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
 
       // Check if this is the "no more instances" marker from Forge
       if (isOutOfInstances(alloyDataInstance)) {
@@ -97,22 +99,22 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
       }
 
       // Create SGraphQueryEvaluator
-      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      const sgraphEvaluator = new core.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
       // Parse layout specification using pre-parser
       const parsedCnd = parseCndFile(cndSpec || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
+        layoutSpec = core.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch (parseError: any) {
         console.error(`[Time ${timeIndex}] Layout spec parse error:`, parseError);
-        layoutSpec = window.CndCore.parseLayoutSpec('');
+        layoutSpec = core.parseLayoutSpec('');
       }
 
       // Create LayoutInstance
       const ENABLE_ALIGNMENT_EDGES = true;
-      const layoutInstance = new window.CndCore.LayoutInstance(
+      const layoutInstance = new core.LayoutInstance(
         layoutSpec,
         sgraphEvaluator,
         instanceIndex, // Use the time index as instance number
@@ -179,7 +181,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
 
   // Load graph when dependencies change
   useEffect(() => {
-    if (graphElementRef.current && typeof window.CndCore !== 'undefined') {
+    if (graphElementRef.current && hasSpytialCore()) {
       loadGraph();
     }
   }, [datum.data, cndSpec, timeIndex, loadGraph]);
@@ -229,9 +231,7 @@ const SingleTemporalPane = (props: SingleTemporalPaneProps) => {
 const MultiTemporalGraph = (props: MultiTemporalGraphProps) => {
   const { datum, cndSpec, selectedTimeIndices, traceLength, sequencePolicyName } = props;
   
-  const [isCndCoreReady, setIsCndCoreReady] = useState(
-    typeof window !== 'undefined' && typeof window.CndCore !== 'undefined'
-  );
+  const [isCndCoreReady, setIsCndCoreReady] = useState(hasSpytialCore());
   const [error, setError] = useState<string | null>(null);
 
   // Poll for CndCore availability
@@ -239,7 +239,7 @@ const MultiTemporalGraph = (props: MultiTemporalGraphProps) => {
     if (isCndCoreReady) return;
 
     const checkCndCore = () => {
-      if (typeof window !== 'undefined' && window.CndCore && typeof window.CndCore.parseLayoutSpec === 'function') {
+      if (hasSpytialCore()) {
         setIsCndCoreReady(true);
         return true;
       }

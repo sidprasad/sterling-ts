@@ -32,6 +32,7 @@ import { SynthesisExampleStep } from './SynthesisExampleStep';
 import { BinaryExampleStep } from './BinaryExampleStep';
 import { SynthesisResultStep } from './SynthesisResultStep';
 import { PaneTitle } from '@/sterling-ui';
+import { getSpytialCore } from '../../../../utils/spytialCore';
 
 /**
  * Main synthesis mode panel - orchestrates the workflow
@@ -55,7 +56,8 @@ const SynthesisModePanel = () => {
   };
 
   const handleStartSynthesis = async () => {
-    if (!datum || !window.CndCore) return;
+    const core = getSpytialCore();
+    if (!datum || !core) return;
 
     dispatch(startSynthesis());
 
@@ -63,7 +65,7 @@ const SynthesisModePanel = () => {
       // Helper to create AlloyDataInstance from raw instance data
       // We store raw data in Redux (not the class) because class methods don't survive serialization
       const createDataInstance = (rawInstanceData: any) => {
-        return new window.CndCore.AlloyDataInstance(rawInstanceData);
+        return new core.AlloyDataInstance(rawInstanceData);
       };
 
       // Helper to find atom object by ID
@@ -105,7 +107,7 @@ const SynthesisModePanel = () => {
         });
 
         console.log('[Synthesis] Calling synthesizeAtomSelectorWithExplanation with:', synthesisExamples);
-        const result = window.CndCore.synthesizeAtomSelectorWithExplanation(
+        const result = core.synthesizeAtomSelectorWithExplanation?.(
           synthesisExamples,
           3 // maxDepth
         );
@@ -118,7 +120,7 @@ const SynthesisModePanel = () => {
         // Evaluate against all instances to show matches
         const matchesByInstance = examples.map((ex, idx) => {
           const dataInstance = createDataInstance(ex.dataInstance);
-          const evaluator = new window.CndCore.SGraphQueryEvaluator();
+          const evaluator = new core.SGraphQueryEvaluator();
           evaluator.initialize({ sourceData: dataInstance });
           const evalResult = evaluator.evaluate(result.expression);
           return {
@@ -154,7 +156,7 @@ const SynthesisModePanel = () => {
           };
         });
 
-        const result = window.CndCore.synthesizeBinarySelectorWithExplanation(
+        const result = core.synthesizeBinarySelectorWithExplanation?.(
           synthesisExamples,
           3 // maxDepth
         );
@@ -166,7 +168,7 @@ const SynthesisModePanel = () => {
         // Evaluate against all instances
         const pairMatchesByInstance = examples.map((ex, idx) => {
           const dataInstance = createDataInstance(ex.dataInstance);
-          const evaluator = new window.CndCore.SGraphQueryEvaluator();
+          const evaluator = new core.SGraphQueryEvaluator();
           evaluator.initialize({ sourceData: dataInstance });
           const evalResult = evaluator.evaluate(result.expression);
           const tuples = evalResult.selectedTuplesAll ? evalResult.selectedTuplesAll() : [];

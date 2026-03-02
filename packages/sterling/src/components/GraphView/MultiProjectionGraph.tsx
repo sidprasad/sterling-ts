@@ -2,6 +2,7 @@ import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { LayoutState, TransformInfo, NodePositionHint } from './SpyTialGraph';
 import { parseCndFile, CndProjection, SequencePolicyName } from '../../utils/cndPreParser';
+import { getSpytialCore, hasSpytialCore } from '../../utils/spytialCore';
 
 // Use the Window type declaration from SpyTialGraph.tsx - no need to re-declare
 
@@ -78,7 +79,8 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
     setIsLoading(true);
     setError(null);
 
-    if (typeof window.CndCore === 'undefined') {
+    const core = getSpytialCore();
+    if (!core) {
       setError('CnD Core library is not available.');
       setIsLoading(false);
       return;
@@ -91,7 +93,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       }
 
       // Parse Alloy XML
-      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
+      const alloyDatum = core.AlloyInstance.parseAlloyXML(alloyXml);
       
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
         throw new Error('No instances found in Alloy XML');
@@ -99,7 +101,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 
       // Create AlloyDataInstance for the current time index
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+      const alloyDataInstance = new core.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
 
       // Check if this is the "no more instances" marker from Forge
       if (isOutOfInstances(alloyDataInstance)) {
@@ -109,27 +111,27 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
       }
 
       // Create SGraphQueryEvaluator
-      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      const sgraphEvaluator = new core.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
       // Parse layout specification using pre-parser to strip projections/sequence blocks
       const parsedCnd = parseCndFile(cndSpec || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
+        layoutSpec = core.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch (parseError: any) {
         console.error(`[Projection ${atomLabel}] Layout spec parse error:`, parseError);
-        layoutSpec = window.CndCore.parseLayoutSpec('');
+        layoutSpec = core.parseLayoutSpec('');
       }
 
       // Apply projection transform for THIS specific atom
       // This replaces the old pattern of passing projections to generateLayout()
       let instanceForLayout = alloyDataInstance;
-      if (projectionType && atomId && window.CndCore.applyProjectionTransform) {
+      if (projectionType && atomId && core.applyProjectionTransform) {
         try {
-          const projConfig: CndProjection[] = [{ type: projectionType }];
+          const projConfig = [{ sig: projectionType }];
           const selections = { [projectionType]: atomId };
-          const projResult = window.CndCore.applyProjectionTransform(
+          const projResult = core.applyProjectionTransform(
             alloyDataInstance,
             projConfig,
             selections,
@@ -154,7 +156,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 
       // Create LayoutInstance
       const ENABLE_ALIGNMENT_EDGES = true;
-      const layoutInstance = new window.CndCore.LayoutInstance(
+      const layoutInstance = new core.LayoutInstance(
         layoutSpec,
         sgraphEvaluator,
         0,
@@ -221,7 +223,7 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 
   // Load graph when dependencies change
   useEffect(() => {
-    if (graphElementRef.current && typeof window.CndCore !== 'undefined') {
+    if (graphElementRef.current && hasSpytialCore()) {
       loadGraph();
     }
   }, [datum.data, cndSpec, timeIndex, loadGraph]);
@@ -273,7 +275,7 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
   console.log('[MultiProjectionGraph] Props:', { projectionType, selectedAtoms, datumId: datum?.id });
   
   const [projectionData, setProjectionData] = useState<ProjectionData[]>([]);
-  const [isCndCoreReady, setIsCndCoreReady] = useState(typeof window !== 'undefined' && typeof window.CndCore !== 'undefined');
+  const [isCndCoreReady, setIsCndCoreReady] = useState(hasSpytialCore());
   const [error, setError] = useState<string | null>(null);
 
   // Poll for CndCore availability
@@ -281,7 +283,7 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
     if (isCndCoreReady) return;
 
     const checkCndCore = () => {
-      if (typeof window !== 'undefined' && window.CndCore && typeof window.CndCore.parseLayoutSpec === 'function') {
+      if (hasSpytialCore()) {
         setIsCndCoreReady(true);
         return true;
       }
@@ -311,7 +313,13 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
 
     try {
       const alloyXml = datum.data;
-      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
+      const core = getSpytialCore();
+      if (!core) {
+        setError('CnD Core library is not available.');
+        return;
+      }
+
+      const alloyDatum = core.AlloyInstance.parseAlloyXML(alloyXml);
       
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
         setError('No instances found in Alloy XML');
@@ -319,7 +327,7 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
       }
 
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+      const alloyDataInstance = new core.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
 
       // Check if this is the "no more instances" marker from Forge
       if (isOutOfInstances(alloyDataInstance)) {
@@ -328,13 +336,13 @@ const MultiProjectionGraph = (props: MultiProjectionGraphProps) => {
       }
 
       // Create evaluator to get projection data
-      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      const sgraphEvaluator = new core.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
       // Parse layout spec using pre-parser
       const parsedCnd = parseCndFile('');
-      const layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
-      const layoutInstance = new window.CndCore.LayoutInstance(layoutSpec, sgraphEvaluator, 0, true);
+      const layoutSpec = core.parseLayoutSpec(parsedCnd.layoutYaml);
+      const layoutInstance = new core.LayoutInstance(layoutSpec, sgraphEvaluator, 0, true);
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
 
       if (layoutResult.projectionData) {

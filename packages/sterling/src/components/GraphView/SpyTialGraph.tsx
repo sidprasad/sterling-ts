@@ -1,6 +1,7 @@
 import { DatumParsed } from '@/sterling-connection';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseCndFile, type CndProjection, type SequencePolicyName } from '../../utils/cndPreParser';
+import { getSpytialCore, hasSpytialCore } from '../../utils/spytialCore';
 
 /**
  * The signature label that Forge uses to indicate no more instances are available.
@@ -42,96 +43,6 @@ export type NodePositionHint = { id: string; x: number; y: number };
 export interface LayoutState {
   positions: NodePositionHint[];
   transform: TransformInfo;
-}
-
-// Declare the global CndCore type
-declare global {
-  interface Window {
-    CndCore: {
-      AlloyInstance: {
-        parseAlloyXML: (xml: string) => any;
-      };
-      AlloyDataInstance: new (instance: any) => any;
-      SGraphQueryEvaluator: new () => {
-        initialize: (context: { sourceData: any }) => void;
-        evaluate: (expression: string, config?: any) => any;
-      };
-      parseLayoutSpec: (spec: string) => any;
-      LayoutInstance: new (
-        layoutSpec: any,
-        evaluator: any,
-        instanceNumber: number,
-        enableAlignmentEdges: boolean
-      ) => {
-        generateLayout: (dataInstance: any) => {
-          layout: any;
-          projectionData?: any[];
-          selectorErrors?: any[];
-          error?: {
-            type?: string;
-            message: string;
-            errorMessages?: any;
-            overlappingNodes?: any;
-          };
-        };
-      };
-      // Projection Transform API (pre-layout data transformation)
-      applyProjectionTransform: (
-        instance: any,
-        projections: Array<{ sig: string; orderBy?: string }>,
-        selections: Record<string, string>,
-        options?: {
-          evaluateOrderBy?: (selector: string) => string[][];
-          onOrderByError?: (selector: string, error: unknown) => void;
-        }
-      ) => {
-        instance: any;
-        choices: Array<{
-          type: string;
-          projectedAtom: string;
-          atoms: string[];
-        }>;
-      };
-      // Sequence Policy API
-      getSequencePolicy: (name: string) => {
-        readonly name: string;
-        apply: (context: any) => any;
-      };
-      // Synthesis API
-      synthesizeAtomSelector: (
-        examples: { atomIds: string[]; instanceData: any }[],
-        maxDepth?: number
-      ) => { expression: string; matchesByInstance: any[] } | null;
-      synthesizeAtomSelectorWithExplanation: (
-        examples: { atomIds: string[]; instanceData: any }[],
-        maxDepth?: number
-      ) => {
-        expression: string;
-        explanation: string;
-        matchesByInstance: { instanceIndex: number; matchedAtomIds: string[] }[];
-      } | null;
-      synthesizeBinarySelector: (
-        examples: { pairs: [string, string][]; instanceData: any }[],
-        maxDepth?: number
-      ) => {
-        expression: string;
-        pairMatchesByInstance: { instanceIndex: number; matchedPairs: [string, string][] }[];
-      } | null;
-      isSynthesisSupported: (evaluator: any) => boolean;
-    };
-    mountCndLayoutInterface?: (elementId?: string, options?: any) => void;
-    mountErrorMessageModal?: (elementId?: string) => void;
-    showParseError?: (message: string, context: string) => void;
-    showGeneralError?: (message: string) => void;
-    showPositionalError?: (errorMessages: any) => void;
-    showGroupOverlapError?: (message: string) => void;
-    showHiddenNodeConflict?: (errorMessages: any) => void;
-    showSelectorErrors?: (errors: any[]) => void;
-    clearAllErrors?: () => void;
-    // Projection control functions
-    updateProjectionData?: (projectionData: any[]) => void;
-    currentProjections?: Record<string, string>;
-  }
 }
 
 // Extend HTMLElementTagNameMap for the webcola-cnd-graph custom element
@@ -196,7 +107,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   const graphElementRef = useRef<HTMLElementTagNameMap['webcola-cnd-graph'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCndCoreReady, setIsCndCoreReady] = useState(typeof window.CndCore !== 'undefined');
+  const [isCndCoreReady, setIsCndCoreReady] = useState(hasSpytialCore());
   const layoutRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
   
@@ -226,7 +137,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     if (isCndCoreReady) return;
 
     const checkCndCore = () => {
-      if (typeof window.CndCore?.parseLayoutSpec === 'function') {
+      if (hasSpytialCore()) {
         console.log('CndCore is now available');
         setIsCndCoreReady(true);
         return true;
@@ -274,7 +185,8 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     setError(null);
 
     // Check if CndCore is available
-    if (typeof window.CndCore === 'undefined') {
+    const core = getSpytialCore();
+    if (!core) {
       setError('CnD Core library is not available. Please check your internet connection.');
       setIsLoading(false);
       return;
@@ -289,7 +201,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
       // Step 1: Parse Alloy XML using CndCore
       //console.log('Parsing Alloy XML...');
-      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(alloyXml);
+      const alloyDatum = core.AlloyInstance.parseAlloyXML(alloyXml);
       
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) {
         throw new Error('No instances found in Alloy XML');
@@ -298,7 +210,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Step 2: Create AlloyDataInstance for the current time index
       // For temporal traces, select the instance at the current time step
       const instanceIndex = timeIndex !== undefined ? Math.min(timeIndex, alloyDatum.instances.length - 1) : 0;
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+      const alloyDataInstance = new core.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
       // console.log('Created Alloy Data Instance:', {
       //   instanceIndex,
       //   totalInstances: alloyDatum.instances.length,
@@ -327,7 +239,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Step 3: Create SGraphQueryEvaluator for layout generation
       // IMPORTANT: Initialize with the ORIGINAL (un-projected) instance so that
       // orderBy selectors and layout selectors can see all atoms.
-      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      const sgraphEvaluator = new core.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
       // Step 4: Parse layout specification
@@ -335,7 +247,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       const parsedCnd = parseCndFile(cndSpec || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
+        layoutSpec = core.parseLayoutSpec(parsedCnd.layoutYaml);
         if (window.clearAllErrors) {
           window.clearAllErrors();
         }
@@ -344,7 +256,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         if (window.showParseError) {
           window.showParseError(parseError.message, 'Layout Specification');
         }
-        layoutSpec = window.CndCore.parseLayoutSpec('');
+        layoutSpec = core.parseLayoutSpec('');
       }
 
       // Step 5: Apply projection transform (pre-layout data transformation)
@@ -355,12 +267,12 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       const currentProjectionConfig = projectionConfigRef.current;
       const currentProjectionSelections = projectionSelectionsRef.current;
 
-      if (currentProjectionConfig.length > 0 && window.CndCore.applyProjectionTransform) {
+      if (currentProjectionConfig.length > 0 && core.applyProjectionTransform) {
         try {
           const selectionsCopy = { ...currentProjectionSelections };
           // spytial-core expects { sig, orderBy } — our CndProjection uses { type, orderBy }
           const projectionsForCore = currentProjectionConfig.map(p => ({ sig: p.type, orderBy: p.orderBy }));
-          const projResult = window.CndCore.applyProjectionTransform(
+          const projResult = core.applyProjectionTransform(
             alloyDataInstance,
             projectionsForCore,
             selectionsCopy,
@@ -397,7 +309,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       // Step 6: Create LayoutInstance and generate layout
       const ENABLE_ALIGNMENT_EDGES = true;
       const instanceNumber = 0;
-      const layoutInstance = new window.CndCore.LayoutInstance(
+      const layoutInstance = new core.LayoutInstance(
         layoutSpec,
         sgraphEvaluator,
         instanceNumber,
@@ -466,8 +378,8 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         if (hasPriorState && prevInstanceRef.current && currentSequencePolicy && currentSequencePolicy !== 'ignore_history') {
           // Use sequence policy API for inter-step continuity
           try {
-            if (typeof window.CndCore.getSequencePolicy === 'function') {
-              const policy = window.CndCore.getSequencePolicy(currentSequencePolicy);
+            if (typeof core.getSequencePolicy === 'function') {
+              const policy = core.getSequencePolicy(currentSequencePolicy);
               if (policy) {
                 renderOptions.policy = policy;
                 renderOptions.prevInstance = prevInstanceRef.current;

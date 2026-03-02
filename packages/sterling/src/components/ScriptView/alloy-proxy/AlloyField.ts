@@ -24,7 +24,7 @@ class AlloyField extends AlloyTypedSet {
         this._id = id;
 
         return proxy
-            ? proxy.applyProxy(this, varName ? cleanseVarName(varName) : id)
+            ? proxy.applyProxy(this, varName ? cleanseVarName(varName) : id, '$field')
             : this;
 
     }

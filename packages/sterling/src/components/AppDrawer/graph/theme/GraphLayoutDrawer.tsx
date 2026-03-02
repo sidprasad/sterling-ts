@@ -4,6 +4,7 @@ import { useSterlingDispatch, useSterlingSelector } from '../../../../state/hook
 import { selectActiveDatum, selectCnDSpec, selectSelectedProjections, selectTimeIndex, selectProjectionConfig, selectSequencePolicyName } from '../../../../state/selectors';
 import { cndSpecSet, selectedProjectionsSet } from '../../../../state/graphs/graphsSlice';
 import { parseCndFile } from '../../../../utils/cndPreParser';
+import { getSpytialCore } from '../../../../utils/spytialCore';
 import * as yaml from 'js-yaml';
 
 /**
@@ -55,28 +56,29 @@ const GraphLayoutDrawer = () => {
 
   const refreshProjectionData = useCallback((specText: string) => {
     if (!datum?.data) return;
-    if (!window.CndCore?.AlloyInstance?.parseAlloyXML || !window.CndCore?.AlloyDataInstance) return;
+    const core = getSpytialCore();
+    if (!core?.AlloyInstance?.parseAlloyXML || !core.AlloyDataInstance) return;
 
     try {
-      const alloyDatum = window.CndCore.AlloyInstance.parseAlloyXML(datum.data);
+      const alloyDatum = core.AlloyInstance.parseAlloyXML(datum.data);
       if (!alloyDatum.instances || alloyDatum.instances.length === 0) return;
 
       const instanceIndex = Math.min(timeIndex, alloyDatum.instances.length - 1);
-      const alloyDataInstance = new window.CndCore.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+      const alloyDataInstance = new core.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
 
-      const sgraphEvaluator = new window.CndCore.SGraphQueryEvaluator();
+      const sgraphEvaluator = new core.SGraphQueryEvaluator();
       sgraphEvaluator.initialize({ sourceData: alloyDataInstance });
 
       // Use parseCndFile to strip projection/sequence blocks before passing to parseLayoutSpec
       const parsedCnd = parseCndFile(specText || '');
       let layoutSpec = null;
       try {
-        layoutSpec = window.CndCore.parseLayoutSpec(parsedCnd.layoutYaml);
+        layoutSpec = core.parseLayoutSpec(parsedCnd.layoutYaml);
       } catch {
-        layoutSpec = window.CndCore.parseLayoutSpec('');
+        layoutSpec = core.parseLayoutSpec('');
       }
 
-      const layoutInstance = new window.CndCore.LayoutInstance(
+      const layoutInstance = new core.LayoutInstance(
         layoutSpec,
         sgraphEvaluator,
         instanceIndex,
@@ -87,7 +89,7 @@ const GraphLayoutDrawer = () => {
       const layoutResult = layoutInstance.generateLayout(alloyDataInstance);
 
       // If CND spec has projections, use applyProjectionTransform to get choices
-      if (parsedCnd.projections.length > 0 && typeof window.CndCore.applyProjectionTransform === 'function') {
+      if (parsedCnd.projections.length > 0 && typeof core.applyProjectionTransform === 'function') {
         try {
           // Convert selectedProjections (Record<string, string[]>) to Record<string, string>
           // by taking the first selected atom per type
@@ -99,7 +101,7 @@ const GraphLayoutDrawer = () => {
           }
           // spytial-core expects { sig, orderBy } — our CndProjection uses { type, orderBy }
           const projectionsForCore = parsedCnd.projections.map(p => ({ sig: p.type, orderBy: p.orderBy }));
-          const projResult = window.CndCore.applyProjectionTransform(
+          const projResult = core.applyProjectionTransform(
             alloyDataInstance,
             projectionsForCore,
             singleSelections,
@@ -191,8 +193,9 @@ const GraphLayoutDrawer = () => {
       };
 
       try {
-        if (window.CndCore?.mountCndLayoutInterface) {
-          window.CndCore.mountCndLayoutInterface('cnd-editor-mount', options);
+        const core = getSpytialCore();
+        if (core?.mountCndLayoutInterface) {
+          core.mountCndLayoutInterface('cnd-editor-mount', options);
           setIsEditorMounted(true);
         } else if (window.mountCndLayoutInterface) {
           window.mountCndLayoutInterface('cnd-editor-mount', options);

@@ -2,7 +2,7 @@ import { dataReceived } from '@/sterling-connection';
 import { Middleware } from '@reduxjs/toolkit';
 import { SterlingState } from '../state/store';
 import { synthesisInstancesLoaded, synthesisOutOfInstances } from '../state/synthesis/synthesisSlice';
-// CndCore types are declared in ../types/cndcore.d.ts
+import { getSpytialCore } from '../utils/spytialCore';
 
 /**
  * The signature label that Forge uses to indicate no more instances are available.
@@ -43,7 +43,8 @@ export const synthesisMiddleware: Middleware<{}, SterlingState> = (store) => (ne
         const payload = action.payload;
         
         // Check if there are any new datums in the "enter" array
-        if (payload.enter && payload.enter.length > 0 && window.CndCore) {
+        const core = getSpytialCore();
+        if (payload.enter && payload.enter.length > 0 && core) {
           const newDatum = payload.enter[payload.enter.length - 1]; // Get the last (newest) datum
           const activeDatum = state.data.datumById[state.data.active || ''];
           
@@ -59,10 +60,10 @@ export const synthesisMiddleware: Middleware<{}, SterlingState> = (store) => (ne
           if (newDatum.generatorName === activeDatum?.generatorName) {
             console.log('[SynthesisMiddleware] New instance from same generator, loading for synthesis');
             
-            const parsedDatum = window.CndCore.AlloyInstance.parseAlloyXML(newDatum.data);
+            const parsedDatum = core.AlloyInstance.parseAlloyXML(newDatum.data);
             
             if (parsedDatum.instances && parsedDatum.instances.length > 0) {
-              const newInstance = new window.CndCore.AlloyDataInstance(
+              const newInstance = new core.AlloyDataInstance(
                 parsedDatum.instances[0]
               );
               

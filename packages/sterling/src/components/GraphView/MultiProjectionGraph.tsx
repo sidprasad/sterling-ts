@@ -176,6 +176,11 @@ const SingleProjectionPane = (props: SingleProjectionPaneProps) => {
 
       // Render the layout
       if (graphElementRef.current && layoutResult.layout) {
+        // Clear stale graph state (including leftover alignment edges) before
+        // rendering the new layout, so nothing from the prior render bleeds through.
+        if (graphElementRef.current.clear) {
+          graphElementRef.current.clear();
+        }
         await graphElementRef.current.renderLayout(layoutResult.layout);
       }
 

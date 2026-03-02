@@ -15,7 +15,7 @@ class AlloySkolem extends AlloyTypedSet {
         this._id = id;
 
         return proxy
-            ? proxy.applyProxy(this, varName(id))
+            ? proxy.applyProxy(this, varName(id), '$skolem')
             : this;
 
     }

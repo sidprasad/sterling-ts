@@ -31,7 +31,7 @@ class AlloySignature extends AlloySet {
         this._tuples = atoms.map(atom => new AlloyTuple([atom]));
 
         return proxy
-            ? proxy.applyProxy(this, varName(id))
+            ? proxy.applyProxy(this, varName(id), '$sig')
             : this;
 
     }

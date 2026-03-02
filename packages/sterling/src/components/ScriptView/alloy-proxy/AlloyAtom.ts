@@ -21,7 +21,7 @@ class AlloyAtom extends AlloySet {
         super();
 
         const self = proxy
-            ? proxy.applyProxy(this, varName(id))
+            ? proxy.applyProxy(this, varName(id), '$atom')
             : this;
 
         this._id = id;

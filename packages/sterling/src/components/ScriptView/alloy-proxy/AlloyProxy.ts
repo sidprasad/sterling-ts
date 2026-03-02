@@ -15,15 +15,16 @@ class AlloyProxy {
      * @param set the AlloySet object to proxy
      * @param id the name of the set     
      */
-    applyProxy<T extends AlloySet> (set: T, id?: string): T {
+    applyProxy<T extends AlloySet> (set: T, id?: string, collisionSuffix?: string): T {
 
         const _sets = this._sets;
-        const _id: string = id || `${_sets.size}`;
+        const requestedID: string = id || `${_sets.size}`;
+        const _id = this._resolveID(requestedID, collisionSuffix);
         const _finalize = this._finalize.bind(this);
 
-        if (_sets.has(_id))
+        if (!_id)
             throw AlloyError.error('AlloyProxy', 
-              `Cannot apply proxy, ID already exists: ${_id}. (This may be caused by a clash between sig and atom names.)`);
+              `Cannot apply proxy, ID already exists: ${requestedID}. (This may be caused by a clash between sig and atom names.)`);
 
         const proxy = new Proxy<T>(set, {
 
@@ -80,11 +81,29 @@ class AlloyProxy {
 
         if (set.tuples().length === 1 && set.tuples()[0].atoms().length === 1) {
             const atom = set.tuples()[0].atoms()[0];
-            return this._sets.get(atom.id()) || this.applyProxy(atom, atom.id());
+            const atomVar = Reflect.get(atom, '__var__');
+            const atomID = typeof atomVar === 'string' ? atomVar : atom.id();
+            return this._sets.get(atomID) || this.applyProxy(atom, atomID);
         }
 
         return this.applyProxy(set);
 
+    }
+
+    private _resolveID (id: string, collisionSuffix?: string): string | null {
+        if (!this._sets.has(id)) return id;
+        if (!collisionSuffix) return null;
+
+        const base = `${id}${collisionSuffix}`;
+        let candidate = base;
+        let index = 2;
+
+        while (this._sets.has(candidate)) {
+            candidate = `${base}${index}`;
+            index += 1;
+        }
+
+        return candidate;
     }
 
 }

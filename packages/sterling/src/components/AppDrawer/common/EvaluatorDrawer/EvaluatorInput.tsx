@@ -80,7 +80,7 @@ const EvaluatorInput = (props: EvaluatorInputProps) => {
   const placeholder = active ? 'Enter an expression...' : 'Evaluator disabled';
 
   return (
-    <div className='absolute inset-x-0 top-0 h-[35px]'>
+    <div className='h-[35px] shrink-0'>
       <form className='relative block font-mono' onSubmit={handleSubmit}>
         <span className='sr-only'>Search</span>
         <span className='absolute inset-y-0 left-0 flex items-center pl-2'>

@@ -34,7 +34,7 @@ const EvaluatorExpressions = (props: EvaluatorExpressionsProps) => {
     selectEvaluatorExpressions(state, datum)
   );
   return (
-    <div className='absolute inset-x-0 top-[35px] bottom-0 flex flex-col overflow-y-auto'>
+    <div className='min-h-0 flex-1 overflow-y-auto'>
       {expressions.map((expression) => {
         return (
           <EvaluatorExpression key={expression.id} expression={expression} />

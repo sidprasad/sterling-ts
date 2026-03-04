@@ -50,7 +50,6 @@ declare global {
   interface HTMLElementTagNameMap {
     'webcola-cnd-graph': HTMLElement & {
       renderLayout: (layout: any, options?: {
-        priorState?: LayoutState;
         policy?: { readonly name: string; apply: (context: any) => any };
         prevInstance?: any;
         currInstance?: any;
@@ -108,7 +107,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCndCoreReady, setIsCndCoreReady] = useState(hasSpytialCore());
-  const layoutRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
   
   // Track the previous data instance for sequence policy continuity
@@ -165,15 +163,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
 
     return () => clearInterval(intervalId);
   }, [isCndCoreReady]);
-
-  /**
-   * Reset the graph layout to the initial state
-   */
-  const resetLayout = useCallback(async () => {
-    if (graphElementRef.current && layoutRef.current) {
-      await graphElementRef.current.renderLayout(layoutRef.current);
-    }
-  }, []);
 
   /**
    * Load and render the graph using SpyTial/CnD
@@ -366,17 +355,8 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         }
       }
 
-      // Store the layout for reset functionality
-      layoutRef.current = layoutResult.layout;
-
       // Step 7: Render the layout with sequence policy for temporal continuity
       if (graphElementRef.current && layoutResult.layout) {
-        // Clear stale graph state (including leftover alignment edges) before
-        // rendering the new layout, so nothing from the prior temporal step bleeds through.
-        if (graphElementRef.current.clear) {
-          graphElementRef.current.clear();
-        }
-
         // Clear unsat state on success
         graphElementRef.current.removeAttribute('unsat');
 
@@ -397,20 +377,20 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
                 renderOptions.priorPositions = priorState;
               } else {
                 // Policy lookup returned null/undefined — fall back to simple prior state
-                renderOptions.priorState = priorState;
+                renderOptions.priorPositions = priorState;
               }
             } else {
               // getSequencePolicy not available — fall back to simple prior state
-              renderOptions.priorState = priorState;
+              renderOptions.priorPositions = priorState;
             }
           } catch (err) {
             console.warn('[SpyTialGraph] Failed to get sequence policy:', err);
             // Fall back to simple prior state on error
-            renderOptions.priorState = priorState;
+            renderOptions.priorPositions = priorState;
           }
         } else if (hasPriorState) {
           // Fallback: simple prior state passing (ignore_history / no policy)
-          renderOptions.priorState = priorState;
+          renderOptions.priorPositions = priorState;
         }
 
         await graphElementRef.current.renderLayout(
@@ -428,7 +408,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
       setError(`Error rendering graph: ${err.message}`);
       setIsLoading(false);
     }
-  }, [datum.data, datum.id, cndSpec, timeIndex, resetLayout, priorState]);
+  }, [datum.data, datum.id, cndSpec, timeIndex, priorState]);
 
   // Create and mount the webcola-cnd-graph element once
   useEffect(() => {
@@ -507,7 +487,6 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         }
       }
       graphElementRef.current = null;
-      layoutRef.current = null;
       isInitializedRef.current = false;
     };
   }, []); // Only run once on mount

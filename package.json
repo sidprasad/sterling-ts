@@ -51,7 +51,7 @@
     "react-monaco-editor": "^0.47.0",
     "react-redux": "^7.2.6",
     "redux": "^4.1.2",
-    "spytial-core": "^1.9.8",
+    "spytial-core": "^2.0.2",
     "transformation-matrix": "^2.10.0",
     "ts-is-present": "^1.2.2",
     "uuid": "^9.0.0"

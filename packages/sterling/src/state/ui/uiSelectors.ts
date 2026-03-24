@@ -43,11 +43,18 @@ function selectScriptDrawer(state: UiState): ScriptDrawerView | null {
 }
 
 /**
+ * Select the edit drawer view.
+ */
+function selectEditDrawer(state: UiState): GraphDrawerView | null {
+  return state.editViewDrawer;
+}
+
+/**
  * Select the open/closed state of the drawer.
  */
 const selectDrawerIsCollapsed = createSelector(
-  [selectMainView, selectGraphDrawer, selectTableDrawer, selectScriptDrawer],
-  (main, graph, table, script) => {
+  [selectMainView, selectGraphDrawer, selectTableDrawer, selectScriptDrawer, selectEditDrawer],
+  (main, graph, table, script, edit) => {
     switch (main) {
       case 'GraphView':
         return graph === null;
@@ -55,6 +62,8 @@ const selectDrawerIsCollapsed = createSelector(
         return table === null;
       case 'ScriptView':
         return script === null;
+      case 'EditView':
+        return edit === null;
       default:
         return true;
     }
@@ -65,8 +74,8 @@ const selectDrawerIsCollapsed = createSelector(
  * Select the drawer view.
  */
 const selectDrawerView = createSelector(
-  [selectMainView, selectGraphDrawer, selectTableDrawer, selectScriptDrawer],
-  (main, graph, table, script) => {
+  [selectMainView, selectGraphDrawer, selectTableDrawer, selectScriptDrawer, selectEditDrawer],
+  (main, graph, table, script, edit) => {
     switch (main) {
       case 'GraphView':
         return graph;
@@ -74,6 +83,8 @@ const selectDrawerView = createSelector(
         return table;
       case 'ScriptView':
         return script;
+      case 'EditView':
+        return edit;
       default:
         return null;
     }
@@ -94,6 +105,7 @@ export default {
   selectGraphDrawer,
   selectTableDrawer,
   selectScriptDrawer,
+  selectEditDrawer,
   selectDrawerIsCollapsed,
   selectDrawerView,
   selectSelectedGenerator

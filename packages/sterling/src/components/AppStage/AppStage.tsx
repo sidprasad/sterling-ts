@@ -4,6 +4,7 @@ import { selectMainView } from '../../state/selectors';
 import { GraphView } from '../GraphView/GraphView';
 import { ScriptView } from '../ScriptView/ScriptView';
 import { TableView } from '../TableView/TableView';
+import { EditView } from '../EditView/EditView';
 
 const AppStage = () => {
   const mainView = useSterlingSelector(selectMainView);
@@ -12,6 +13,7 @@ const AppStage = () => {
       {mainView === 'GraphView' && <GraphView />}
       {mainView === 'TableView' && <TableView />}
       {mainView === 'ScriptView' && <ScriptView />}
+      {mainView === 'EditView' && <EditView />}
     </Pane>
   );
 };

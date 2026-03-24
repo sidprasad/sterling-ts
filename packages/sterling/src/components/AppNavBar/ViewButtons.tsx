@@ -2,6 +2,7 @@ import { NavButton } from '@/sterling-ui';
 import { HiCode } from 'react-icons/hi';
 import { FaTable } from 'react-icons/fa';
 import { BiNetworkChart } from 'react-icons/bi';
+import { MdEdit } from 'react-icons/md';
 import { useSterlingDispatch, useSterlingSelector } from '../../state/hooks';
 import { selectAvailableViews, selectMainView } from '../../state/selectors';
 import { mainViewChanged } from '../../state/ui/uiSlice';
@@ -40,6 +41,16 @@ const ViewButtons = () => {
           onClick={() => dispatch(mainViewChanged('ScriptView'))}
         >
           Script
+        </NavButton>
+      )}
+      {availableViews.includes('EditView') && (
+        <NavButton
+          isActive={mainView === 'EditView'}
+          mr={1}
+          leftIcon={<MdEdit />}
+          onClick={() => dispatch(mainViewChanged('EditView'))}
+        >
+          Edit
         </NavButton>
       )}
     </>

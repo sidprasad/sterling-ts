@@ -81,6 +81,11 @@ const EditView = () => {
 
       if (graphElementRef.current.setDataInstance) {
         graphElementRef.current.setDataInstance(alloyDataInstance);
+        // setDataInstance registers listeners but doesn't render — trigger layout explicitly
+        const el = graphElementRef.current as any;
+        if (typeof el.enforceConstraintsAndRegenerate === 'function') {
+          el.enforceConstraintsAndRegenerate();
+        }
       }
     } catch (err: any) {
       console.error('Failed to load instance:', err);

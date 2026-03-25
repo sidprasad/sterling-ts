@@ -18,6 +18,7 @@ declare global {
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
       setDataInstance?: (instance: any) => void;
+      enforceConstraintsAndRegenerate?: () => Promise<void>;
       clearNodeHighlights?: () => void;
       highlightNodes?: (nodeIds: string[], color?: string) => boolean;
     };

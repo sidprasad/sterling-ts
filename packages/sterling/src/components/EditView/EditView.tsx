@@ -126,6 +126,9 @@ const EditView = () => {
               )}
             </div>
           </PaneHeader>
+          <div className="px-3 py-1.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs">
+            Experimental feature — Edit mode is under active development.
+          </div>
           <PaneBody>
             <SpyTialEditGraph
               datum={datum}

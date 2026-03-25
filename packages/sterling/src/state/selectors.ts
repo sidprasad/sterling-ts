@@ -168,6 +168,15 @@ export function selectGraphDrawer(
 }
 
 /**
+ * Select the edit drawer view.
+ */
+export function selectEditDrawer(
+  state: SterlingState
+): GraphDrawerView | null {
+  return uiSelectors.selectEditDrawer(state.ui);
+}
+
+/**
  * Select the graph layout associated with a datum.
  */
 export function selectGraphLayout(

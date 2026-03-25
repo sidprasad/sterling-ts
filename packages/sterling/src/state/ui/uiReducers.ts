@@ -9,6 +9,18 @@ import {
 } from './ui';
 
 /**
+ * Display an edit view drawer or hide the drawer.
+ * Reuses GraphDrawerView since the edit view shares the same drawer types.
+ */
+function editDrawerViewChanged(
+  state: UiState,
+  action: PayloadAction<GraphDrawerView>
+) {
+  const view = action.payload;
+  state.editViewDrawer = view === state.editViewDrawer ? null : view;
+}
+
+/**
  * Set the main UI view (graph/table/script)
  */
 function mainViewChanged(state: UiState, action: PayloadAction<MainView>) {
@@ -32,6 +44,9 @@ function commonDrawerViewChanged(
       break;
     case 'ScriptView':
       state.scriptViewDrawer = view === state.scriptViewDrawer ? null : view;
+      break;
+    case 'EditView':
+      state.editViewDrawer = view === state.editViewDrawer ? null : view;
       break;
   }
 }
@@ -88,5 +103,6 @@ export default {
   graphDrawerViewChanged,
   tableDrawerViewChanged,
   scriptDrawerViewChanged,
+  editDrawerViewChanged,
   selectedGeneratorChanged
 };

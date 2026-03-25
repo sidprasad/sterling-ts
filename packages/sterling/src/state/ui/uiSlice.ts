@@ -21,6 +21,7 @@ export const {
   graphDrawerViewChanged,
   tableDrawerViewChanged,
   scriptDrawerViewChanged,
+  editDrawerViewChanged,
   selectedGeneratorChanged
 } = uiSlice.actions;
 export default uiSlice.reducer;

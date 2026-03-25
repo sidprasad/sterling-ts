@@ -4,6 +4,7 @@ import { selectMainView } from '../../state/selectors';
 import { GraphDrawer, GraphDrawerHeader } from './graph/GraphDrawer';
 import { ScriptDrawer, ScriptDrawerHeader } from './script/ScriptDrawer';
 import { TableDrawer, TableDrawerHeader } from './table/TableDrawer';
+import { EditDrawer, EditDrawerHeader } from './edit/EditDrawer';
 
 const AppDrawer = () => {
   const view = useSterlingSelector(selectMainView);
@@ -13,11 +14,13 @@ const AppDrawer = () => {
         {view === 'GraphView' && <GraphDrawerHeader />}
         {view === 'TableView' && <TableDrawerHeader />}
         {view === 'ScriptView' && <ScriptDrawerHeader />}
+        {view === 'EditView' && <EditDrawerHeader />}
       </PaneHeader>
       <PaneBody>
         {view === 'GraphView' && <GraphDrawer />}
         {view === 'TableView' && <TableDrawer />}
         {view === 'ScriptView' && <ScriptDrawer />}
+        {view === 'EditView' && <EditDrawer />}
       </PaneBody>
     </Pane>
   );

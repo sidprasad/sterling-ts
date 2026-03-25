@@ -365,16 +365,20 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
         const hasPriorState = priorState && priorState.positions && priorState.positions.length > 0;
         const currentSequencePolicy = sequencePolicyNameRef.current;
 
-        if (hasPriorState && prevInstanceRef.current && currentSequencePolicy && currentSequencePolicy !== 'ignore_history') {
+        if (hasPriorState && currentSequencePolicy && currentSequencePolicy !== 'ignore_history') {
           // Use sequence policy API for inter-step continuity
           try {
             if (typeof core.getSequencePolicy === 'function') {
               const policy = core.getSequencePolicy(currentSequencePolicy);
               if (policy) {
                 renderOptions.policy = policy;
-                renderOptions.prevInstance = prevInstanceRef.current;
                 renderOptions.currInstance = alloyDataInstance;
                 renderOptions.priorPositions = priorState;
+                // prevInstance may be null on the first transition — that's OK,
+                // the web component will still morph using priorPositions.
+                if (prevInstanceRef.current) {
+                  renderOptions.prevInstance = prevInstanceRef.current;
+                }
               } else {
                 // Policy lookup returned null/undefined — fall back to simple prior state
                 renderOptions.priorPositions = priorState;
@@ -418,6 +422,7 @@ const SpyTialGraph = (props: SpyTialGraphProps) => {
     const graphElement = document.createElement('webcola-cnd-graph') as HTMLElementTagNameMap['webcola-cnd-graph'];
     graphElement.id = 'spytial-graph-container';
     graphElement.setAttribute('layoutFormat', 'default');
+    graphElement.setAttribute('transition-mode', 'morph');
     graphElement.setAttribute('aria-label', 'Interactive graph visualization');
     graphElement.style.cssText = `
       width: 100%;

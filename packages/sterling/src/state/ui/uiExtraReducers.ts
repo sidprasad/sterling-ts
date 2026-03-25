@@ -13,8 +13,14 @@ function metaReceived(state: UiState, action: PayloadAction<ProviderMeta>) {
           return 'TableView';
         case 'script':
           return 'ScriptView';
+        case 'edit':
+          return 'EditView';
       }
     });
+    // Always include EditView if not already present
+    if (!state.availableViews.includes('EditView')) {
+      state.availableViews.push('EditView');
+    }
     state.mainView = state.availableViews[0];
 
     // If the provider listed its generators, default to whatever it listed first.

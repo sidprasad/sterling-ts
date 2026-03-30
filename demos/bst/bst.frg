@@ -31,5 +31,6 @@ run {bst}
 
 
 
--- racket bst.frg -O run_sterling serve -O sterling_port 17100
+-- racket bst.frg -O sterling_port 17100
 -- then open http://localhost:8081?17100 in a web browser
+

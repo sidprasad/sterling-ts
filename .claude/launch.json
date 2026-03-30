@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sterling-forge",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["dev:forge"],
+      "port": 8081
+    }
+  ]
+}

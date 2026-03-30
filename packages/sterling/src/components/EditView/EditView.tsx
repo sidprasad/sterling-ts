@@ -11,6 +11,7 @@ import {
 import { SpyTialEditGraph } from './SpyTialEditGraph';
 import type { LayoutState } from '../GraphView/SpyTialGraph';
 import { getSpytialCore } from '../../utils/spytialCore';
+import { validateEditedInstance, ValidationIssue } from '../../utils/instanceValidation';
 
 const EditView = () => {
   const datum = useSterlingSelector(selectActiveDatum);
@@ -29,33 +30,77 @@ const EditView = () => {
 
   const layoutStateRef = useRef<LayoutState | undefined>(undefined);
   const graphElementRef = useRef<HTMLElementTagNameMap['structured-input-graph'] | null>(null);
-  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+
+  type ExportFeedback =
+    | { status: 'success'; message: string }
+    | { status: 'warning'; message: string; issues: ValidationIssue[] }
+    | { status: 'error'; message: string; issues: ValidationIssue[] };
+
+  const [exportFeedback, setExportFeedback] = useState<ExportFeedback | null>(null);
+  const [showIssueDetails, setShowIssueDetails] = useState(false);
 
   const handleLayoutStateChange = useCallback((state: LayoutState) => {
     layoutStateRef.current = state;
   }, []);
 
-  const handleDataExported = useCallback((data: string, format: string, reified: unknown) => {
-    // The reified data is the inst string — copy to clipboard
+  const copyAndValidate = useCallback((data: string) => {
+    const el = graphElementRef.current as any;
+    const core = getSpytialCore();
+
+    // Run validation if we have the data instance and original schema
+    let validation: { errors: ValidationIssue[]; warnings: ValidationIssue[] } | null = null;
+    if (el?.dataInstance && datum?.data && core) {
+      try {
+        const alloyDatum = core.AlloyInstance.parseAlloyXML(datum.data);
+        if (alloyDatum.instances && alloyDatum.instances.length > 0) {
+          const instanceIndex = timeIndex !== undefined
+            ? Math.min(timeIndex, alloyDatum.instances.length - 1)
+            : 0;
+          validation = validateEditedInstance(el.dataInstance, alloyDatum.instances[instanceIndex]);
+        }
+      } catch (err) {
+        console.warn('Validation failed, skipping:', err);
+      }
+    }
+
+    // Always copy to clipboard
     navigator.clipboard.writeText(data).then(() => {
-      setExportFeedback('Copied to clipboard!');
-      setTimeout(() => setExportFeedback(null), 2000);
+      if (validation && validation.errors.length > 0) {
+        setExportFeedback({
+          status: 'error',
+          message: `Copied, but found ${validation.errors.length} error(s)`,
+          issues: [...validation.errors, ...validation.warnings],
+        });
+        setShowIssueDetails(true);
+      } else if (validation && validation.warnings.length > 0) {
+        setExportFeedback({
+          status: 'warning',
+          message: `Copied with ${validation.warnings.length} warning(s)`,
+          issues: validation.warnings,
+        });
+        setShowIssueDetails(true);
+        setTimeout(() => setExportFeedback(null), 8000);
+      } else {
+        setExportFeedback({ status: 'success', message: 'Copied to clipboard!' });
+        setShowIssueDetails(false);
+        setTimeout(() => setExportFeedback(null), 2000);
+      }
     }).catch((err) => {
       console.error('Failed to copy to clipboard:', err);
-      setExportFeedback('Failed to copy');
+      setExportFeedback({ status: 'error', message: 'Failed to copy', issues: [] });
       setTimeout(() => setExportFeedback(null), 2000);
     });
-  }, []);
+  }, [datum, timeIndex]);
+
+  const handleDataExported = useCallback((data: string, _format: string, _reified: unknown) => {
+    copyAndValidate(data);
+  }, [copyAndValidate]);
 
   const handleExport = useCallback(() => {
-    // Trigger the structured-input-graph's internal export (which calls reify())
-    // by dispatching a synthetic action. The element's exportDataAsJSON is private,
-    // so we trigger it via the built-in export button or directly invoke reify on the data instance.
     const el = graphElementRef.current as any;
     if (el && typeof el.exportDataAsJSON === 'function') {
       el.exportDataAsJSON();
     } else if (el?.dataInstance && typeof el.dataInstance.reify === 'function') {
-      // Fallback: directly reify from the data instance
       const reified = el.dataInstance.reify();
       const exportString = typeof reified === 'string'
         ? reified
@@ -119,9 +164,9 @@ const EditView = () => {
               >
                 Export as inst
               </button>
-              {exportFeedback && (
+              {exportFeedback?.status === 'success' && (
                 <span className="text-xs text-green-600 font-medium">
-                  {exportFeedback}
+                  {exportFeedback.message}
                 </span>
               )}
             </div>
@@ -129,6 +174,46 @@ const EditView = () => {
           <div className="px-3 py-1.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs">
             Experimental feature — Edit mode is under active development.
           </div>
+          {exportFeedback && exportFeedback.status !== 'success' && (
+            <div className={`px-3 py-2 border-b text-xs ${
+              exportFeedback.status === 'error'
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-amber-50 border-amber-200 text-amber-700'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{exportFeedback.message}</span>
+                <div className="flex items-center space-x-2">
+                  {exportFeedback.issues.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowIssueDetails(!showIssueDetails)}
+                      className="underline hover:no-underline"
+                    >
+                      {showIssueDetails ? 'Hide' : 'Details'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setExportFeedback(null); setShowIssueDetails(false); }}
+                    className="hover:opacity-70"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              {showIssueDetails && exportFeedback.issues.length > 0 && (
+                <ul className="mt-1.5 space-y-0.5 list-disc list-inside">
+                  {exportFeedback.issues.map((issue, idx) => (
+                    <li key={idx}>
+                      <span className={issue.severity === 'error' ? 'text-red-600' : 'text-amber-600'}>
+                        {issue.message}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <PaneBody>
             <SpyTialEditGraph
               datum={datum}

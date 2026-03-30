@@ -8,6 +8,7 @@ import { commonDrawerViewChanged } from '../../state/ui/uiSlice';
 import { GraphViewButtons } from './GraphViewButtons';
 import { ScriptViewButtons } from './ScriptViewButtons';
 import { TableViewButtons } from './TableViewButtons';
+import { EditViewButtons } from './EditViewButtons';
 
 const AppSideBar = () => {
   const dispatch = useSterlingDispatch();
@@ -18,6 +19,7 @@ const AppSideBar = () => {
       {view === 'GraphView' && <GraphViewButtons />}
       {view === 'TableView' && <TableViewButtons />}
       {view === 'ScriptView' && <ScriptViewButtons />}
+      {view === 'EditView' && <EditViewButtons />}
       <Spacer />
       
       <SideBarButton

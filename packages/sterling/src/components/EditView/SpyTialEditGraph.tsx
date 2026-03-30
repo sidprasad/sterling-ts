@@ -212,6 +212,36 @@ const SpyTialEditGraph = (props: SpyTialEditGraphProps) => {
     }
   }, [cndSpec, applyCndSpec, isCndCoreReady]);
 
+  // Auto-load instance from datum after CnD spec is applied so the graph
+  // starts with the correct schema (avoiding arity errors from empty instances)
+  useEffect(() => {
+    if (!graphElementRef.current || !isCndCoreReady || isLoading) return;
+    if (!datum?.data) return;
+
+    const core = getSpytialCore();
+    if (!core) return;
+
+    try {
+      const alloyDatum = core.AlloyInstance.parseAlloyXML(datum.data);
+      if (!alloyDatum.instances || alloyDatum.instances.length === 0) return;
+
+      const instanceIndex = timeIndex !== undefined
+        ? Math.min(timeIndex, alloyDatum.instances.length - 1)
+        : 0;
+      const alloyDataInstance = new core.AlloyDataInstance(alloyDatum.instances[instanceIndex]);
+
+      if (graphElementRef.current.setDataInstance) {
+        graphElementRef.current.setDataInstance(alloyDataInstance);
+        const el = graphElementRef.current as any;
+        if (typeof el.enforceConstraintsAndRegenerate === 'function') {
+          el.enforceConstraintsAndRegenerate();
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to auto-load instance:', err);
+    }
+  }, [datum, timeIndex, isCndCoreReady, isLoading]);
+
   return (
     <div
       className="absolute inset-0 flex flex-col"

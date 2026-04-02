@@ -16,7 +16,7 @@ function dataReceived(
   state: DraftState,
   action: PayloadAction<DataJoinParsed>
 ) {
-  const { enter } = action.payload;
+  const { enter, exit } = action.payload;
 
   if (enter) {
     // Extract Alloy data, since that's all we know how to use right now
@@ -73,6 +73,16 @@ function dataReceived(
 
       // TODO: Remove during refactor
       state.hiddenByDatumId[datumId] = {};
+    });
+  }
+
+  if (exit) {
+    exit.forEach((datum) => {
+      const datumId = datum.id;
+      delete state.layoutsByDatumId[datumId];
+      delete state.matricesByDatumId[datumId];
+      delete state.timeByDatumId[datumId];
+      delete state.hiddenByDatumId[datumId];
     });
   }
 }

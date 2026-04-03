@@ -2,9 +2,15 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "sterling-alloy",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["webpack", "serve", "--mode=development", "--env", "provider=alloy"],
+      "port": 8081
+    },
+    {
       "name": "sterling-forge",
-      "runtimeExecutable": "yarn",
-      "runtimeArgs": ["dev:forge"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["webpack", "serve", "--mode=development", "--env", "provider=forge"],
       "port": 8081
     }
   ]

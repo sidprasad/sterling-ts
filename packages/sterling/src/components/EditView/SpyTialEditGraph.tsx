@@ -18,6 +18,13 @@ declare global {
       addToolbarControl?: (element: HTMLElement) => void;
       clear?: () => void;
       setDataInstance?: (instance: any) => void;
+      getDataInstance?: () => any;
+      getCurrentConstraintError?: () => any;
+      hasConstraintErrors?: () => boolean;
+      getAvailableTypes?: () => string[];
+      setCnDSpec?: (spec: string) => Promise<void>;
+      // TS-private in spytial-core beta.2 but still accessible at runtime;
+      // no public alternative exists for triggering the CnD pipeline after setDataInstance.
       enforceConstraintsAndRegenerate?: () => Promise<void>;
       clearNodeHighlights?: () => void;
       highlightNodes?: (nodeIds: string[], color?: string) => boolean;

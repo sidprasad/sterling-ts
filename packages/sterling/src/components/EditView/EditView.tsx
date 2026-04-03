@@ -44,19 +44,20 @@ const EditView = () => {
   }, []);
 
   const copyAndValidate = useCallback((data: string) => {
-    const el = graphElementRef.current as any;
+    const el = graphElementRef.current;
+    const dataInstance = el?.getDataInstance?.();
     const core = getSpytialCore();
 
     // Run validation if we have the data instance and original schema
     let validation: { errors: ValidationIssue[]; warnings: ValidationIssue[] } | null = null;
-    if (el?.dataInstance && datum?.data && core) {
+    if (dataInstance && datum?.data && core) {
       try {
         const alloyDatum = core.AlloyInstance.parseAlloyXML(datum.data);
         if (alloyDatum.instances && alloyDatum.instances.length > 0) {
           const instanceIndex = timeIndex !== undefined
             ? Math.min(timeIndex, alloyDatum.instances.length - 1)
             : 0;
-          validation = validateEditedInstance(el.dataInstance, alloyDatum.instances[instanceIndex]);
+          validation = validateEditedInstance(dataInstance, alloyDatum.instances[instanceIndex]);
         }
       } catch (err) {
         console.warn('Validation failed, skipping:', err);
@@ -97,11 +98,10 @@ const EditView = () => {
   }, [copyAndValidate]);
 
   const handleExport = useCallback(() => {
-    const el = graphElementRef.current as any;
-    if (el && typeof el.exportDataAsJSON === 'function') {
-      el.exportDataAsJSON();
-    } else if (el?.dataInstance && typeof el.dataInstance.reify === 'function') {
-      const reified = el.dataInstance.reify();
+    const el = graphElementRef.current;
+    const dataInstance = el?.getDataInstance?.();
+    if (dataInstance && typeof dataInstance.reify === 'function') {
+      const reified = dataInstance.reify();
       const exportString = typeof reified === 'string'
         ? reified
         : JSON.stringify(reified, null, 2);
@@ -126,7 +126,7 @@ const EditView = () => {
 
       if (graphElementRef.current.setDataInstance) {
         graphElementRef.current.setDataInstance(alloyDataInstance);
-        // setDataInstance registers listeners but doesn't render — trigger layout explicitly
+        // setDataInstance only assigns the field — trigger layout explicitly
         const el = graphElementRef.current as any;
         if (typeof el.enforceConstraintsAndRegenerate === 'function') {
           el.enforceConstraintsAndRegenerate();

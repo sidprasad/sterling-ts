@@ -199,7 +199,11 @@ class AlloyProxy {
 
   constructor();
 
-  applyProxy<T extends AlloySet>(set: T, id?: string): T;
+  applyProxy<T extends AlloySet>(
+    set: T,
+    id?: string,
+    collisionSuffix?: string
+  ): T;
 
   private _finalize;
 }

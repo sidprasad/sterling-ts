@@ -12,6 +12,15 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["webpack", "serve", "--mode=development", "--env", "provider=forge"],
       "port": 8081
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "source ~/.nvm/nvm.sh && nvm use 22 >/dev/null && yarn --cwd docs dev --port 5173"
+      ],
+      "port": 5173
     }
   ]
 }

@@ -22,3 +22,8 @@ yarn-error.log*
 
 # local dev scripts
 copy-spytial-core.sh
+
+# VitePress docs build artifacts
+docs/.vitepress/dist
+docs/.vitepress/cache
+docs/node_modules

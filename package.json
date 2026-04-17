@@ -1,12 +1,16 @@
 {
   "name": "sterling-layout",
-  "description": "Spytial Sterling is a fork of the Sterling visualizer that encodes spatial layout.",
+  "description": "Cope and Drag (CnD): a fork of the Sterling visualizer that encodes spatial layout.",
   "version": "2.5.4",
   "main": "index.js",
   "author": "Siddhartha Prasad",
   "license": "MIT",
   "type": "module",
-  "homepage": "https://sidprasad.github.io/sterling-ts",
+  "homepage": "https://sidprasad.github.io/copeanddrag",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sidprasad/copeanddrag.git"
+  },
   "scripts": {
     "build:alloy": "webpack --env provider=alloy",
     "build:forge": "webpack --env provider=forge",
@@ -18,7 +22,10 @@
     "test": "yarn node --experimental-vm-modules $(yarn bin jest)",
     "predeploy:alloy": "webpack --env provider=alloy",
     "predeploy:forge": "webpack --env provider=forge",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "docs:dev": "yarn --cwd docs dev",
+    "docs:build": "yarn --cwd docs build",
+    "docs:preview": "yarn --cwd docs preview"
   },
   "dependencies": {
     "@blueprintjs/core": "^3.51.3",
